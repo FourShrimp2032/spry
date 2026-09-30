@@ -10,7 +10,7 @@ class MeetingCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     starts_at: AwareDatetime
     ends_at: AwareDatetime
-    attendee_count: Annotated[int, Field(strict=True, ge=0)]
+    attendee_count: Annotated[int, Field(strict=True, ge=0, le=2147483647)]
 
     @field_validator("starts_at", "ends_at", mode="before")
     @classmethod

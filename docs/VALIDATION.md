@@ -1,7 +1,7 @@
 # Local verification — 2026-09-30
 
 - Docker Compose build and startup: all 3 services healthy.
-- Backend: Ruff lint and formatting passed; 11 integration tests passed against PostgreSQL `spry_test`.
+- Backend: Ruff lint and formatting passed; 12 integration tests passed against PostgreSQL `spry_test`.
 - Alembic: upgrade → downgrade base → upgrade completed on the disposable test DB.
 - Frontend: ESLint, Prettier and production Vite build passed on macOS and inside the Linux frontend container.
 - Browser: created Weekly product sync, Design review and Sprint planning through the form; data remained after page reload.

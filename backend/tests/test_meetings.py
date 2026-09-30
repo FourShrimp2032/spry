@@ -39,6 +39,7 @@ def test_create_persist_and_list():
         {"title": "  "},
         {"title": "x" * 201},
         {"attendee_count": -1},
+        {"attendee_count": 2147483648},
         {"attendee_count": 1.5},
         {"attendee_count": True},
         {"starts_at": "2026-09-30T10:00:00"},
