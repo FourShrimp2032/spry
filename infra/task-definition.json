@@ -14,7 +14,7 @@
   "containerDefinitions": [
     {
       "name": "backend",
-      "image": "<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/spry:<COMMIT_SHA>",
+      "image": "<ACCOUNT_ID>.dkr.ecr.eu-north-1.amazonaws.com/spry:<COMMIT_SHA>",
       "essential": true,
       "portMappings": [
         {
@@ -31,7 +31,7 @@
       "secrets": [
         {
           "name": "DATABASE_URL",
-          "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:<DB_SECRET>"
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:<ACCOUNT_ID>:secret:<DB_SECRET>"
         }
       ],
       "healthCheck": {
@@ -50,7 +50,7 @@
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/spry",
-          "awslogs-region": "<REGION>",
+          "awslogs-region": "eu-north-1",
           "awslogs-stream-prefix": "backend"
         }
       }

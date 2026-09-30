@@ -3,7 +3,7 @@
 - [x] Клонувати https://github.com/dobosevych/OneTwoThree зі збереженням history; підготувати окрему лабораторну гілку.
 - [x] Push у власний GitHub repository.
 - [ ] Дати викладачу доступ до private repository (потрібен його GitHub username).
-- [ ] Зафіксувати failed lint run на test branch і наступний успішний run.
+- [x] Failed lint run: [red](https://github.com/FourShrimp2032/spry/actions/runs/36719971295); після виправлення: [green](https://github.com/FourShrimp2032/spry/actions/runs/36720151761).
 - [ ] Надати Lab 1 reference image для точного відтворення дизайну.
 - [ ] Налаштувати AWS resources, OIDC і domain; deploy із main.
 - [ ] Додати реальні HTTPS frontend/backend URL.

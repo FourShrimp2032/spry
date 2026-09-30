@@ -21,7 +21,7 @@ Database password у URI обов'язково URL-encode. Для повної s
 ## 3. Private S3 і CloudFront
 Створіть S3 bucket із Block Public Access та Bucket owner enforced. CloudFront: REST S3 origin (не website), Origin Access Control з SigV4 signing, default root object `index.html`, viewer protocol redirect-to-https, compression on. Alias `app.YOUR_DOMAIN`.
 
-Bucket policy має дозволяти `s3:GetObject` на `arn:aws:s3:::BUCKET/*` лише service principal `cloudfront.amazonaws.com` за умови `AWS:SourceArn == arn:aws:cloudfront::ACCOUNT:distribution/DISTRIBUTION_ID`. Public read не потрібен. Поточний односторінковий застосунок використовує тільки `/`, SPA route fallback не потрібен.
+Шаблон: `infra/cloudfront-bucket-policy.json`. Bucket policy має дозволяти `s3:GetObject` на `arn:aws:s3:::BUCKET/*` лише service principal `cloudfront.amazonaws.com` за умови `AWS:SourceArn == arn:aws:cloudfront::ACCOUNT:distribution/DISTRIBUTION_ID`. Public read не потрібен. Поточний односторінковий застосунок використовує тільки `/`, SPA route fallback не потрібен.
 
 ## 4. DNS та certificates
 ACM certificate для CloudFront замовляється у `us-east-1`, для ALB — у region ALB. Додайте ACM validation CNAME записи та дочекайтеся Issued. Прикріпіть cert до CloudFront і ALB 443 listener. Додайте routing CNAME/Route53 Alias: `app` → CloudFront, `api` → ALB. Validation records залиште для автоматичного renew. Перевірте HTTPS, DNS та redirect 80→443.
@@ -31,7 +31,7 @@ CORS_ORIGINS у task definition має дорівнювати `https://app.YOUR_
 ## 5. GitHub OIDC і permissions
 Створіть IAM OIDC provider `https://token.actions.githubusercontent.com`, audience `sts.amazonaws.com`. Створіть deploy role із trust template `infra/github-oidc-trust.json`. Замініть ACCOUNT_ID; repo вже обмежено до FourShrimp2032/spry. Exact `sub` дозволяє лише main саме вашого repo; wildcard за repo не допускається.
 
-Прикріпіть permissions policy з такими мінімальними діями й обмеженнями:
+Прикріпіть `infra/github-deploy-policy.json`, замінивши placeholders і назви ресурсів на створені. У ньому такі мінімальні дії й обмеження:
 - `ecr:GetAuthorizationToken` на `*`; upload layer, check layer, PutImage на конкретний ECR repo.
 - `ecs:DescribeTaskDefinition`, `ecs:RegisterTaskDefinition` (де API не підтримує resource scoping — `*`).
 - `ecs:RunTask` на `spry-backend:*` із condition конкретного cluster; `ecs:DescribeTasks` на tasks свого cluster.
