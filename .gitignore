@@ -1,12 +1,12 @@
 .env
+.env.*
+!.env.example
+node_modules/
+dist/
 .venv/
 __pycache__/
 *.pyc
 .pytest_cache/
-node_modules/
-dist/
-.idea/
+.ruff_cache/
 .DS_Store
-
-# AWS app-stack overrides (may hold account-specific values)
-infra/*.params.env
+work/
