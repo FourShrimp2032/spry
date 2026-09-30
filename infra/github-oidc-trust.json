@@ -10,7 +10,7 @@
       "Condition": {
         "StringEquals": {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-          "token.actions.githubusercontent.com:sub": "repo:FourShrimp2032/spry:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub": "repo:FourShrimp2032@144481403/spry@1397996851:ref:refs/heads/main"
         }
       }
     }

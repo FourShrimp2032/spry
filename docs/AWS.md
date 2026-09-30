@@ -1,8 +1,8 @@
 # AWS deployment runbook
 
-Для поточного сценарію без домену почніть із [AWS-CLICK-GUIDE.md](AWS-CLICK-GUIDE.md) і готового CloudFormation `infra/aws-stack.json`. Нижче — довідкова інструкція ручного налаштування окремих ресурсів; не створюйте їх вдруге після автоматичного stack.
+Поточний stack `spry-lab` уже розгорнуто; адреси й результати є у [VALIDATION.md](VALIDATION.md). Для повторного створення без домену скористайтеся [AWS-CLICK-GUIDE.md](AWS-CLICK-GUIDE.md) і готового CloudFormation `infra/aws-stack.json`. Нижче — довідкова інструкція ручного налаштування окремих ресурсів; не створюйте їх вдруге після автоматичного stack.
 
-Це інструкція налаштування, а не доказ створених ресурсів. Потрібні AWS account, MFA, адміністративний доступ для bootstrap, GitHub repo та контроль DNS власного домену. Довготривалі ключі не комітити. Локально краще AWS SSO/profile; GitHub використовує OIDC.
+Це довідкова інструкція ручного налаштування; доказ поточного розгортання наведено у VALIDATION.md. Потрібні AWS account, MFA, адміністративний доступ для bootstrap, GitHub repo та контроль DNS власного домену. Довготривалі ключі не комітити. Локально краще AWS SSO/profile; GitHub використовує OIDC.
 
 ## 1. Мережа і PostgreSQL
 Обраний AWS region: `eu-north-1` (Stockholm). Створіть VPC із двома AZ, public subnets для ALB і private subnets для RDS. Створіть PostgreSQL 16 RDS database `spry` з encryption, backups і без public access. DB security group дозволяє 5432 тільки від backend security group. Backend SG дозволяє 8000 тільки від ALB SG; ALB SG — 80/443 з internet.
@@ -31,7 +31,7 @@ ACM certificate для CloudFront замовляється у `us-east-1`, дл�
 CORS_ORIGINS у task definition має дорівнювати `https://app.YOUR_DOMAIN` без trailing slash. `VITE_API_URL=https://api.YOUR_DOMAIN` задається під час frontend build і доступний публічно; це не місце для секретів.
 
 ## 5. GitHub OIDC і permissions
-Створіть IAM OIDC provider `https://token.actions.githubusercontent.com`, audience `sts.amazonaws.com`. Створіть deploy role із trust template `infra/github-oidc-trust.json`. Замініть ACCOUNT_ID; repo вже обмежено до FourShrimp2032/spry. Exact `sub` дозволяє лише main саме вашого repo; wildcard за repo не допускається.
+Створіть IAM OIDC provider `https://token.actions.githubusercontent.com`, audience `sts.amazonaws.com`. Створіть deploy role із trust template `infra/github-oidc-trust.json`. Замініть ACCOUNT_ID; repo вже обмежено до FourShrimp2032/spry з immutable owner/repository IDs. Для іншого repo змініть `GitHubOidcSubject` у CloudFormation. Нові GitHub repositories використовують формат `repo:OWNER@OWNER_ID/REPO@REPO_ID:ref:refs/heads/main` ([GitHub reference](https://docs.github.com/en/actions/reference/security/oidc)). Exact `sub` дозволяє лише main саме вашого repo; wildcard за repo не допускається.
 
 Прикріпіть `infra/github-deploy-policy.json`, замінивши placeholders і назви ресурсів на створені. У ньому такі мінімальні дії й обмеження:
 - `ecr:GetAuthorizationToken` на `*`; upload layer, check layer, PutImage на конкретний ECR repo.

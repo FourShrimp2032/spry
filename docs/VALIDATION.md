@@ -7,8 +7,17 @@
 - Responsive UI: checked at 390px; no horizontal overflow.
 - Browser: created Weekly product sync, Design review and Sprint planning through the form; data remained after page reload.
 - Resilience: stopped local Postgres; GET /api/meetings returned HTTP 503 with the documented message; restarted Postgres and all 3 records returned again without an API restart.
-- Screenshot: `docs/meetings-screenshot.jpg` shows the running Docker application with those demonstration records. A fresh clone starts with an empty database.
-- CloudFormation template passed cfn-lint with no errors or warnings; AWS-side provisioning is not yet tested.
+- Local browser verification used three demonstration meetings. A fresh clone starts with an empty database.
+- CloudFormation template passed cfn-lint with no errors or warnings.
 - Deployment shell scripts passed bash syntax checks; Docker Compose config validated.
 
-AWS deployment has not been executed or verified. Account login, domain and initial resources are still needed. GitHub main checks passed; the intentional red-then-green demonstration is linked in SUBMISSION.md. Deployment was skipped because AWS_ROLE_ARN is not configured.
+## AWS verification — 2026-09-30
+
+- CloudFormation `spry-lab` in eu-north-1 created successfully; OIDC trust update completed.
+- GitHub [run 36727682803, attempt 2](https://github.com/FourShrimp2032/spry/actions/runs/36727682803/attempts/2): all checks and both deployment targets succeeded.
+- Initial attempt exposed the new immutable GitHub OIDC subject format. The exact owner/repository IDs now restrict trust to this repository's main branch; no wildcard was added.
+- Separate Alembic ECS migration task exited 0. Fargate web task became healthy behind ALB.
+- Public HTTPS `/health` returned 200 with `{"status":"ok"}`; `/api/meetings` returned 200.
+- Browser on https://d310vkwtz8a1f0.cloudfront.net created Weekly product sync, Design review and Sprint planning. All three remained after page reload; API returned the same records.
+- `docs/meetings-screenshot.jpg` is the actual CloudFront frontend after reload, with 3 meetings and 18 attendee places.
+- Frontend and API share the temporary CloudFront hostname. Own-domain DNS, ACM and ALB HTTPS listener remain outstanding; see SUBMISSION.md.

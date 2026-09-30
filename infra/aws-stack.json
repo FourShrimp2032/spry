@@ -36,6 +36,11 @@
       "Default": "",
       "Description": "ACM certificate in the stack region; required with custom domains",
       "AllowedPattern": "^$|^arn:aws[a-zA-Z-]*:acm:[a-z0-9-]+:[0-9]{12}:certificate/.+$"
+    },
+    "GitHubOidcSubject": {
+      "Type": "String",
+      "Default": "repo:FourShrimp2032@144481403/spry@1397996851:ref:refs/heads/main",
+      "Description": "Exact GitHub OIDC subject for main. New repositories include immutable owner and repository IDs."
     }
   },
   "Rules": {
@@ -1334,7 +1339,7 @@
                 "StringEquals": {
                   "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
                   "token.actions.githubusercontent.com:sub": {
-                    "Fn::Sub": "repo:${GitHubRepository}:ref:refs/heads/main"
+                    "Ref": "GitHubOidcSubject"
                   }
                 }
               }
@@ -1459,6 +1464,12 @@
           {
             "Key": "Project",
             "Value": "spry"
+          },
+          {
+            "Key": "GitHubRepository",
+            "Value": {
+              "Ref": "GitHubRepository"
+            }
           }
         ]
       }
