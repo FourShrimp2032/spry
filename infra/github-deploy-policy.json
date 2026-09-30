@@ -11,6 +11,7 @@
     {
       "Effect": "Allow",
       "Action": [
+        "ecr:DescribeImages",
         "ecr:BatchCheckLayerAvailability",
         "ecr:InitiateLayerUpload",
         "ecr:UploadLayerPart",

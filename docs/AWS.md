@@ -1,5 +1,7 @@
 # AWS deployment runbook
 
+Для поточного сценарію без домену почніть із [AWS-CLICK-GUIDE.md](AWS-CLICK-GUIDE.md) і готового CloudFormation `infra/aws-stack.json`. Нижче — довідкова інструкція ручного налаштування окремих ресурсів; не створюйте їх вдруге після автоматичного stack.
+
 Це інструкція налаштування, а не доказ створених ресурсів. Потрібні AWS account, MFA, адміністративний доступ для bootstrap, GitHub repo та контроль DNS власного домену. Довготривалі ключі не комітити. Локально краще AWS SSO/profile; GitHub використовує OIDC.
 
 ## 1. Мережа і PostgreSQL
@@ -16,7 +18,7 @@ Database password у URI обов'язково URL-encode. Для повної s
 
 Підставте значення у `infra/task-definition.json`. Створіть ECS cluster і task definition. Створіть IP target group port 8000, HTTP health path `/health`, success code 200. Створіть ALB у двох public subnets, HTTPS listener 443 і HTTP 80 redirect на HTTPS. ECS service: Fargate, desired count 1, target group/container backend:8000, health grace period 60 секунд, deployment circuit breaker з rollback. Не запускайте production міграції через container startup command.
 
-Для першого запуску спочатку завантажте backend image з SHA першого коміту у ECR, зареєструйте task definition і створіть service з desired count 0. Запустіть `make deploy-backend`: він запустить migration task і оновить definition. Потім підніміть desired count до 1 і дочекайтеся healthy target. Подальші deploy працюють зі збереженим desired count.
+Для першого запуску спочатку завантажте backend image з SHA першого коміту у ECR, зареєструйте task definition і створіть service з desired count 0. Запустіть `make deploy-backend`: він запустить migration task і оновить definition. Сценарій deploy-backend встановлює desired count 1 і чекає healthy service. Подальші deploy працюють зі збереженим desired count.
 
 ## 3. Private S3 і CloudFront
 Створіть S3 bucket із Block Public Access та Bucket owner enforced. CloudFront: REST S3 origin (не website), Origin Access Control з SigV4 signing, default root object `index.html`, viewer protocol redirect-to-https, compression on. Alias `app.YOUR_DOMAIN`.

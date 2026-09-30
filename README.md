@@ -24,6 +24,7 @@ docker compose up --build
 
 - [PROJECT.md](PROJECT.md) — структура й контракт, записані до генерації застосунку.
 - [docs/LAB-ANSWERS.md](docs/LAB-ANSWERS.md) — пояснення рішень для захисту.
+- [docs/AWS-CLICK-GUIDE.md](docs/AWS-CLICK-GUIDE.md) — покроковий запуск у Safari через CloudShell; починаємо з read-only preflight.
 - [docs/AWS.md](docs/AWS.md) — ресурси, HTTPS, OIDC, налаштування й teardown.
 - [docs/SUBMISSION.md](docs/SUBMISSION.md) — стан і список матеріалів для здачі.
 
@@ -46,4 +47,4 @@ CI викликає ті самі команди після успішних п�
 
 ## Межі цієї роботи
 
-Проєкт базується на клоні https://github.com/dobosevych/OneTwoThree зі збереженою Git-історією. Лабораторна гілка замінює розширений Cognito/Lambda варіант мінімальним Spry відповідно до завдання. GitHub: https://github.com/FourShrimp2032/spry (private). AWS region: eu-north-1. AWS-доступ і домен ще потрібно налаштувати; сервіс поки працює локально. AWS-шаблони потребують підстановки реальних значень та створення ресурсів. Референс Lab 1 відсутній; UI — власне оформлення. Статистика рахується з реальних зустрічей; вигаданих week-over-week відсотків немає.
+Проєкт базується на клоні https://github.com/dobosevych/OneTwoThree зі збереженою Git-історією. Лабораторна гілка замінює розширений Cognito/Lambda варіант мінімальним Spry відповідно до завдання. GitHub: https://github.com/FourShrimp2032/spry (private). AWS region: eu-north-1. AWS-доступ і домен ще потрібно налаштувати; сервіс поки працює локально. Готовий `infra/aws-stack.json` створює інфраструктуру через CloudFormation; ресурси платні, запуск виконує власник акаунта. Окремі JSON-шаблони ролей/task з placeholders — довідкові альтернативи для ручного налаштування. Власного домену поки немає: перший запуск використовує тимчасову CloudFront HTTPS-адресу. Референс Lab 1 відсутній; UI — власне оформлення. Статистика рахується з реальних зустрічей; вигаданих week-over-week відсотків немає.

@@ -2,6 +2,7 @@ name: Check and deploy Spry
 on:
   push:
   pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -45,9 +46,19 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint && npm run format:check && npm run build
+  infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.10'
+      - run: pip install cfn-lint==1.57.1
+      - run: cfn-lint infra/aws-stack.json
+      - run: bash -n scripts/*.sh
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AWS_ROLE_ARN != ''
-    needs: [backend, frontend]
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.AWS_ROLE_ARN != ''
+    needs: [backend, frontend, infrastructure]
     runs-on: ubuntu-latest
     concurrency:
       group: production

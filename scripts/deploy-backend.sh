@@ -6,9 +6,13 @@ SHA="${GITHUB_SHA:-$(git rev-parse HEAD)}"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 REGISTRY="$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
 IMAGE="$REGISTRY/$ECR_REPOSITORY:$SHA"
-aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
-# ECS task uses X86_64 even if local laptop is Apple Silicon.
-docker buildx build --platform linux/amd64 --push -t "$IMAGE" backend
+# Re-running a SHA deploy reuses its immutable image.
+if aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids "imageTag=$SHA" > /dev/null 2>&1; then
+  echo "Reusing immutable image $SHA"
+else
+  aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+  docker buildx build --platform linux/amd64 --push -t "$IMAGE" backend
+fi
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 aws ecs describe-task-definition --task-definition "$TASK_FAMILY" --query taskDefinition > "$TMP_DIR/current.json"
@@ -28,7 +32,7 @@ PYCODE
 aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER" --tasks "$MIGRATION_ARN"
 EXIT_CODE=$(aws ecs describe-tasks --cluster "$ECS_CLUSTER" --tasks "$MIGRATION_ARN" --query 'tasks[0].containers[?name==`backend`].exitCode | [0]' --output text)
 [[ "$EXIT_CODE" == 0 ]] || { echo "Migration failed: $MIGRATION_ARN ($EXIT_CODE)"; exit 1; }
-aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" --task-definition "$TASK_ARN" > /dev/null
+aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" --task-definition "$TASK_ARN" --desired-count 1 > /dev/null
 aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE"
 ACTUAL_TASK=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --query 'services[0].taskDefinition' --output text)
 [[ "$ACTUAL_TASK" == "$TASK_ARN" ]] || { echo 'Deployment rolled back'; exit 1; }
