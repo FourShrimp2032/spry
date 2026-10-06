@@ -19,6 +19,10 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://spry:spry_local_only@postgres:5432/spry
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      # Empty = public API. Set all three to require Cognito access tokens locally.
+      COGNITO_REGION: ${COGNITO_REGION:-}
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID:-}
+      COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -34,6 +38,10 @@ services:
       - "127.0.0.1:5173:5173"
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      # Empty = no sign-in. `make auth-env` prints the values from the auth stack.
+      VITE_COGNITO_AUTHORITY: ${VITE_COGNITO_AUTHORITY:-}
+      VITE_COGNITO_CLIENT_ID: ${VITE_COGNITO_CLIENT_ID:-}
+      VITE_COGNITO_DOMAIN: ${VITE_COGNITO_DOMAIN:-}
     depends_on:
       backend:
         condition: service_healthy

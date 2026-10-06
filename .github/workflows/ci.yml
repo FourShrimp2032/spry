@@ -54,7 +54,7 @@ jobs:
         with:
           python-version: '3.12.10'
       - run: pip install cfn-lint==1.57.1
-      - run: cfn-lint infra/aws-stack.json
+      - run: cfn-lint infra/aws-stack.json infra/auth.yml
       - run: bash -n scripts/*.sh
   deploy:
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.AWS_ROLE_ARN != ''
@@ -78,6 +78,10 @@ jobs:
       FRONTEND_BUCKET: ${{ vars.FRONTEND_BUCKET }}
       CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
       VITE_API_URL: ${{ vars.VITE_API_URL }}
+      # Empty until the auth stack exists: the site then builds without sign-in, as in Lab 2.
+      AUTH_STACK: ${{ vars.AUTH_STACK }}
+      # 1 = the API requires a Cognito access token (stretch goal).
+      PROTECT_API: ${{ vars.PROTECT_API }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

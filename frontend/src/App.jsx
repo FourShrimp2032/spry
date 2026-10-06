@@ -5,6 +5,8 @@ import {
   Check,
   Clock3,
   Leaf,
+  LogIn,
+  LogOut,
   Plus,
   RefreshCw,
   Users,
@@ -12,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { Card } from "./components/ui/card";
+import { authEnabled, signOut, useOptionalAuth } from "./auth";
 const API = (import.meta.env.VITE_API_URL || "http://localhost:8000").replace(
   /\/$/,
   "",
@@ -24,6 +27,30 @@ const inputTime = (value) =>
     .toISOString()
     .slice(0, 16);
 
+function Account({ auth }) {
+  if (auth.isLoading)
+    return <span className="text-xs text-stone-400">Checking sign-in…</span>;
+  if (!auth.isAuthenticated)
+    return (
+      <Button size="sm" onClick={() => auth.signinRedirect()}>
+        <LogIn size={15} /> Sign in
+      </Button>
+    );
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <span
+        className="max-w-[45vw] truncate text-sm font-medium sm:max-w-[16rem]"
+        title={auth.user.profile.email}
+      >
+        {auth.user.profile.email}
+      </span>
+      <Button variant="outline" size="sm" onClick={() => signOut(auth)}>
+        <LogOut size={15} /> Sign out
+      </Button>
+    </div>
+  );
+}
+
 export default function App() {
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,11 +60,20 @@ export default function App() {
   const [notice, setNotice] = useState("");
   const dialog = useRef(null);
   const createButton = useRef(null);
+  const auth = useOptionalAuth();
+  const token = auth?.user?.access_token;
+  const authLoading = auth?.isLoading;
+  // The API checks this token when it is protected (PROTECT_API=1); otherwise it ignores it.
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+  const signInMessage = "Sign in to see and create meetings.";
   async function load() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`${API}/api/meetings`);
+      const response = await fetch(`${API}/api/meetings`, {
+        headers: authHeaders,
+      });
+      if (response.status === 401) throw new Error(signInMessage);
       if (!response.ok)
         throw new Error("Could not load meetings. Please try again.");
       setMeetings(await response.json());
@@ -48,8 +84,9 @@ export default function App() {
     }
   }
   useEffect(() => {
-    load();
-  }, []);
+    // Wait for a stored session, so a signed-in user's first request carries the token.
+    if (!authLoading) load();
+  }, [authLoading, token]);
   useEffect(() => {
     if (showForm) dialog.current?.showModal();
     else dialog.current?.close();
@@ -78,9 +115,10 @@ export default function App() {
     try {
       const response = await fetch(`${API}/api/meetings`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify(body),
       });
+      if (response.status === 401) throw new Error(signInMessage);
       if (!response.ok)
         throw new Error(
           response.status === 422
@@ -126,11 +164,23 @@ export default function App() {
           <span className="hidden rounded-full bg-[#edf2e8] px-4 py-2 text-xs font-medium text-[#536846] sm:block">
             A little more clarity. A lot less meeting.
           </span>
-          <span className="flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 bg-stone-50 text-xs font-semibold">
-            SY
-          </span>
+          {authEnabled ? (
+            <Account auth={auth} />
+          ) : (
+            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 bg-stone-50 text-xs font-semibold">
+              SY
+            </span>
+          )}
         </div>
       </header>
+      {auth?.error && (
+        <p
+          role="alert"
+          className="mx-auto mt-6 max-w-7xl rounded-xl bg-red-50 p-4 text-sm text-red-800"
+        >
+          Sign-in failed: {auth.error.message}. Please try again.
+        </p>
+      )}
       <div className="mx-auto max-w-7xl px-6 py-10 lg:px-12 lg:py-14">
         <div className="mb-8 flex items-center gap-2 text-xs font-semibold uppercase tracking-[.18em] text-stone-500">
           <span className="h-2 w-2 rounded-full bg-[#86a666]" /> Your workspace{" "}

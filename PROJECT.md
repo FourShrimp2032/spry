@@ -16,7 +16,7 @@ Python image `python:3.12.10-slim-bookworm`; Postgres image `postgres:16.9-bookw
 ## API contract
 `GET /api/meetings` → 200 JSON array, ordered by starts_at then id. Empty database → `[]`.
 Each object: `id` UUID string; `title` trimmed nonempty string, maximum 200 characters; `starts_at` and `ends_at` RFC3339 strings with explicit timezone, stored and returned in UTC; `attendee_count` integer from 0 through 2147483647. End must be strictly after start.
-`POST /api/meetings` accepts all fields except id and returns the persisted object with status 201. Unknown fields, missing fields, invalid times, negative/non-integer attendee counts and blank titles → 422 FastAPI validation detail. All fields are required. No authentication in this lab slice.
+`POST /api/meetings` accepts all fields except id and returns the persisted object with status 201. Unknown fields, missing fields, invalid times, negative/non-integer attendee counts and blank titles → 422 FastAPI validation detail. All fields are required. Lab 3 adds Cognito sign-in in the frontend; the API stays public unless COGNITO_USER_POOL_ID is set, in which case both meetings endpoints require a valid Cognito access token (`Authorization: Bearer`) and return 401 otherwise. `/health` is always public.
 `GET /health` → 200 `{ "status": "ok" }` only if the database answers SELECT 1. Database connection errors → 503 `{ "detail": "Database temporarily unavailable" }`. Sessions roll back on failure; connection pre-ping replaces stale connections for later requests. No automatic retries of writes.
 Browser calls backend directly through `VITE_API_URL` (default http://localhost:8000); CORS permits the configured frontend origin only.
 

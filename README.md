@@ -7,6 +7,7 @@
 - Frontend: https://d310vkwtz8a1f0.cloudfront.net
 - Backend: https://d310vkwtz8a1f0.cloudfront.net/api/meetings
 - Health: https://d310vkwtz8a1f0.cloudfront.net/health
+- Вхід (Lab 3, Cognito): https://d310vkwtz8a1f0.cloudfront.net/login/
 - [Успішний AWS deploy](https://github.com/FourShrimp2032/spry/actions/runs/36727682803/attempts/2)
 
 ![Spry running on AWS](docs/meetings-screenshot.jpg)
@@ -36,6 +37,10 @@ docker compose up --build
 - [docs/AWS-CLICK-GUIDE.md](docs/AWS-CLICK-GUIDE.md) — покроковий запуск у Safari через CloudShell; починаємо з read-only preflight.
 - [docs/AWS.md](docs/AWS.md) — ресурси, HTTPS, OIDC, налаштування й teardown.
 - [docs/SUBMISSION.md](docs/SUBMISSION.md) — стан і список матеріалів для здачі.
+- [docs/LAB3.md](docs/LAB3.md) — вхід через Cognito (email/пароль і Google): що додано, кроки deploy, що здавати.
+- [docs/LAB3-ANSWERS.md](docs/LAB3-ANSWERS.md) — відповіді на питання Lab 3 (міграція, вартість, автентифікація).
+
+Стан, зданий у Lab 2, зафіксовано тегом [`lab2`](https://github.com/FourShrimp2032/spry/tree/lab2).
 
 ## Перевірки
 

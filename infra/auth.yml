@@ -1,0 +1,134 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Spry sign-in: Cognito user pool (email + password with self sign-up, and Google), a public
+  app client for the browser, and a managed login (v2) domain. Essentials tier: the first
+  10,000 monthly active users are free.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: spry
+  DomainPrefix:
+    Type: String
+    Description: https://<prefix>.auth.<region>.amazoncognito.com. Google's OAuth client points here.
+    AllowedPattern: "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+  SiteUrl:
+    Type: String
+    Description: The deployed site's origin without a trailing slash, e.g. https://d123.cloudfront.net
+    AllowedPattern: "^https://[^/]+$"
+  LocalUrl:
+    Type: String
+    Default: http://localhost:5173
+    AllowedPattern: "^http://localhost:[0-9]+$"
+  GoogleClientId:
+    Type: String
+    AllowedPattern: ".+\\.apps\\.googleusercontent\\.com"
+  GoogleClientSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 1
+
+Resources:
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub ${ProjectName}-users
+      UserPoolTier: ESSENTIALS
+      UserPoolTags:
+        PROJECT_NAME: !Ref ProjectName
+      # Sign in with an email, not a separate username; Cognito emails a code to confirm it.
+      UsernameAttributes: [email]
+      UsernameConfiguration:
+        CaseSensitive: false
+      AutoVerifiedAttributes: [email]
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 10
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          TemporaryPasswordValidityDays: 7
+      # Cognito's built-in sender: about 50 emails a day per account. A real product uses SES.
+      EmailConfiguration:
+        EmailSendingAccount: COGNITO_DEFAULT
+
+  GoogleIdentityProvider:
+    Type: AWS::Cognito::UserPoolIdentityProvider
+    Properties:
+      UserPoolId: !Ref UserPool
+      ProviderName: Google
+      ProviderType: Google
+      ProviderDetails:
+        client_id: !Ref GoogleClientId
+        client_secret: !Ref GoogleClientSecret
+        authorize_scopes: openid email profile
+      # Without this a Google user arrives with no email and the header has nothing to show.
+      AttributeMapping:
+        email: email
+        email_verified: email_verified
+        name: name
+
+  # Public client: a browser cannot keep a secret, so PKCE protects the code exchange instead.
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    DependsOn: GoogleIdentityProvider
+    Properties:
+      ClientName: !Sub ${ProjectName}-web
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      PreventUserExistenceErrors: ENABLED
+      EnableTokenRevocation: true
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows: [code]
+      AllowedOAuthScopes: [openid, email, profile]
+      SupportedIdentityProviders: [COGNITO, Google]
+      # Exact matches, trailing slash included: the app builds these from window.location.origin.
+      CallbackURLs:
+        - !Sub ${SiteUrl}/auth/callback/
+        - !Sub ${LocalUrl}/auth/callback/
+      LogoutURLs:
+        - !Sub ${SiteUrl}/
+        - !Sub ${LocalUrl}/
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: !Ref UserPool
+      Domain: !Ref DomainPrefix
+      ManagedLoginVersion: 2
+
+  # A version 2 domain has no sign-in page until the client has a branding style.
+  ManagedLoginBranding:
+    Type: AWS::Cognito::ManagedLoginBranding
+    DependsOn: UserPoolDomain
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientId: !Ref UserPoolClient
+      UseCognitoProvidedValues: true
+
+Outputs:
+  UserPoolId:
+    Value: !Ref UserPool
+  ClientId:
+    Value: !Ref UserPoolClient
+  Region:
+    Value: !Ref AWS::Region
+  Authority:
+    Description: OIDC issuer; its JWKS is at <Authority>/.well-known/jwks.json.
+    Value: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+  LoginDomain:
+    Description: Managed login domain; /logout lives here because Cognito has no OIDC end-session endpoint.
+    Value: !Sub https://${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com
+  GoogleRedirectUri:
+    Description: Authorised redirect URI for the Google OAuth client.
+    Value: !Sub https://${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com/oauth2/idpresponse

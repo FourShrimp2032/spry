@@ -873,6 +873,20 @@
         }
       }
     },
+    "SpaRouteFunction": {
+      "Type": "AWS::CloudFront::Function",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-spa-routes"
+        },
+        "AutoPublish": true,
+        "FunctionConfig": {
+          "Comment": "Serve index.html for client-side routes",
+          "Runtime": "cloudfront-js-2.0"
+        },
+        "FunctionCode": "function handler(event) {\n  var request = event.request;\n  // Client-side routes such as /login/ and /auth/callback/ have no S3 object: serve the app.\n  var last = request.uri.split('/').pop();\n  if (last.indexOf('.') === -1) request.uri = '/index.html';\n  return request;\n}\n"
+      }
+    },
     "Distribution": {
       "Type": "AWS::CloudFront::Distribution",
       "Properties": {
@@ -962,7 +976,18 @@
             "Compress": true,
             "CachePolicyId": {
               "Ref": "NoCachePolicy"
-            }
+            },
+            "FunctionAssociations": [
+              {
+                "EventType": "viewer-request",
+                "FunctionARN": {
+                  "Fn::GetAtt": [
+                    "SpaRouteFunction",
+                    "FunctionARN"
+                  ]
+                }
+              }
+            ]
           },
           "CacheBehaviors": [
             {
@@ -1454,6 +1479,13 @@
                   "Action": "cloudfront:CreateInvalidation",
                   "Resource": {
                     "Fn::Sub": "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "cloudformation:DescribeStacks",
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:cloudformation:us-east-1:${AWS::AccountId}:stack/spry-auth/*"
                   }
                 }
               ]

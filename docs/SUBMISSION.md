@@ -1,5 +1,9 @@
 # Матеріали для здачі
 
+Lab 3 (Cognito) — у [LAB3.md](LAB3.md#що-здати). Стан Lab 2 — тег [`lab2`](https://github.com/FourShrimp2032/spry/tree/lab2).
+
+## Lab 2
+
 - Repository: https://github.com/FourShrimp2032/spry (public).
 - Frontend HTTPS: https://d310vkwtz8a1f0.cloudfront.net
 - Backend HTTPS: https://d310vkwtz8a1f0.cloudfront.net/api/meetings
@@ -7,7 +11,7 @@
 - Screenshot реального AWS frontend: [meetings-screenshot.jpg](meetings-screenshot.jpg).
 - [Успішний deploy через OIDC](https://github.com/FourShrimp2032/spry/actions/runs/36727682803/attempts/2).
 
-## Що прикріпити у систему здачі
+### Що прикріпити у систему здачі
 
 1. Посилання на repository вище.
 2. Файл `meetings-screenshot.jpg` із цієї папки.
@@ -16,7 +20,7 @@
 
 Поточну CloudFront адресу залишено за рішенням власника. У поясненні до здачі вкажіть, що власний домен не підключено; формальна вимога own domain поки не виконана.
 
-## Виконано
+### Виконано
 
 - [x] Клон course repository зі збереженням Git history, власний GitHub repository.
 - [x] PROJECT.md перед генерацією коду, monorepo, Docker Compose, API та UI.
@@ -26,7 +30,7 @@
 - [x] S3/CloudFront, ECR/ECS Fargate/ALB, private RDS, OIDC для конкретного repository/main, Makefile deploy.
 - [x] HTTPS на тимчасовій AWS адресі, screenshot із трьома демонстраційними зустрічами.
 
-## Для повної відповідності завданню
+### Для повної відповідності завданню
 
 - [ ] Власний домен із DNS/ACM, окремі app/api адреси та ALB HTTPS listener. Наразі власного домену немає; CloudFront → ALB використовує HTTP з обмеженням за secret origin header. Це не виконання вимоги own domain.
 - [x] Репозиторій публічний — викладач може відкрити його без запрошення.
