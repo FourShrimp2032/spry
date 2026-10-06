@@ -8,7 +8,7 @@
 |---|---|---|
 | User pool як код | `infra/auth.yml` | UserPool (Essentials, email як логін, self sign-up, політика паролів, тег `PROJECT_NAME`), публічний клієнт без секрету з code flow, Google IdP із mapping email/email_verified/name, домен managed login v2, ManagedLoginBranding |
 | Маршрути сайту | `infra/aws-stack.json` | CloudFront Function віддає `index.html` для `/login/` і `/auth/callback/` (S3 REST origin не має index documents). Deploy role GitHub отримує лише `cloudformation:DescribeStacks` на `spry-auth`, щоб Makefile читав outputs |
-| Оновлення stack | `scripts/aws-update-stack.sh` | Change set зі старими значеннями параметрів; відмовляє, якщо змінюється щось, крім Distribution, SpaRouteFunction і GitHubDeployRole (БД і ECS service захищені) |
+| Оновлення stack | `scripts/aws-update-stack.sh`, `scripts/add-sign-in-routes.py` | Бере шаблон, який реально розгорнуто в AWS (він відрізняється від `infra/aws-stack.json`), додає лише зміни для входу, створює change set зі старими значеннями параметрів; відмовляє, якщо змінюється щось, крім Distribution, SpaRouteFunction і GitHubDeployRole (БД і ECS service захищені) |
 | Deploy auth | `make deploy-auth` | Бере URL сайту з outputs `spry-lab`, Google client із `.env`, секрет іде як NoEcho параметр |
 | Frontend | `frontend/src/auth.js`, `LoginPage.jsx`, `main.jsx`, `App.jsx` | `react-oidc-context` + `oidc-client-ts`; кнопка Sign in, email і Sign out у header; `/login/` одразу викликає `signinRedirect()`; вихід через Cognito `/logout` |
 | Build-змінні | `Makefile` | `VITE_COGNITO_AUTHORITY`, `VITE_COGNITO_CLIENT_ID`, `VITE_COGNITO_DOMAIN` читаються з outputs auth stack, не копіюються вручну |
