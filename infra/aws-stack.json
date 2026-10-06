@@ -873,18 +873,18 @@
         }
       }
     },
-    "SpaRouteFunction": {
+    "AuthRoutes": {
       "Type": "AWS::CloudFront::Function",
       "Properties": {
         "Name": {
-          "Fn::Sub": "${AWS::StackName}-spa-routes"
+          "Fn::Sub": "${AWS::StackName}-auth-routes"
         },
         "AutoPublish": true,
         "FunctionConfig": {
-          "Comment": "Serve index.html for client-side routes",
+          "Comment": "Serve Vite entry point for explicit auth routes only",
           "Runtime": "cloudfront-js-2.0"
         },
-        "FunctionCode": "function handler(event) {\n  var request = event.request;\n  // Client-side routes such as /login/ and /auth/callback/ have no S3 object: serve the app.\n  var last = request.uri.split('/').pop();\n  if (last.indexOf('.') === -1) request.uri = '/index.html';\n  return request;\n}\n"
+        "FunctionCode": "function handler(event) { var r = event.request; if (['/login', '/login/', '/auth/callback', '/auth/callback/'].indexOf(r.uri) !== -1) r.uri = '/index.html'; return r; }"
       }
     },
     "Distribution": {
@@ -982,7 +982,7 @@
                 "EventType": "viewer-request",
                 "FunctionARN": {
                   "Fn::GetAtt": [
-                    "SpaRouteFunction",
+                    "AuthRoutes",
                     "FunctionARN"
                   ]
                 }

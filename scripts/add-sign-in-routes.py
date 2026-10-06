@@ -7,14 +7,13 @@ Usage: add-sign-in-routes.py SOURCE OUTPUT. SOURCE is a JSON template, or the JS
 import json
 import sys
 
-FUNCTION_CODE = """function handler(event) {
-  var request = event.request;
-  // Client-side routes such as /login/ and /auth/callback/ have no S3 object: serve the app.
-  var last = request.uri.split('/').pop();
-  if (last.indexOf('.') === -1) request.uri = '/index.html';
-  return request;
-}
-"""
+# The function already deployed to spry-lab: only the two sign-in routes serve the app.
+FUNCTION_CODE = (
+    "function handler(event) { var r = event.request; "
+    "if (['/login', '/login/', '/auth/callback', '/auth/callback/'].indexOf(r.uri) !== -1) "
+    "r.uri = '/index.html'; return r; }"
+)
+ASSOCIATION = {"EventType": "viewer-request", "FunctionARN": {"Fn::GetAtt": ["AuthRoutes", "FunctionARN"]}}
 READ_AUTH_OUTPUTS = {
     "Effect": "Allow",
     "Action": "cloudformation:DescribeStacks",
@@ -29,18 +28,29 @@ with open(sys.argv[1]) as source:
 if isinstance(template, str):  # get-template returns the body as a string in some cases
     template = json.loads(template)
 resources = template["Resources"]
+behavior = resources["Distribution"]["Properties"]["DistributionConfig"]["DefaultCacheBehavior"]
 
-if "SpaRouteFunction" not in resources:
+
+def serves_sign_in_routes(association):
+    name = association["FunctionARN"].get("Fn::GetAtt", [None])[0]
+    code = resources.get(name, {}).get("Properties", {}).get("FunctionCode", "")
+    return "/login/" in code and "/auth/callback/" in code
+
+
+associations = behavior.get("FunctionAssociations", [])
+if not any(serves_sign_in_routes(item) for item in associations):
+    if associations:
+        sys.exit("The default behavior already has other CloudFront functions; merge them by hand.")
     rebuilt = {}
     for name, resource in resources.items():
         if name == "Distribution":
-            rebuilt["SpaRouteFunction"] = {
+            rebuilt["AuthRoutes"] = {
                 "Type": "AWS::CloudFront::Function",
                 "Properties": {
-                    "Name": {"Fn::Sub": "${AWS::StackName}-spa-routes"},
+                    "Name": {"Fn::Sub": "${AWS::StackName}-auth-routes"},
                     "AutoPublish": True,
                     "FunctionConfig": {
-                        "Comment": "Serve index.html for client-side routes",
+                        "Comment": "Serve Vite entry point for explicit auth routes only",
                         "Runtime": "cloudfront-js-2.0",
                     },
                     "FunctionCode": FUNCTION_CODE,
@@ -48,15 +58,7 @@ if "SpaRouteFunction" not in resources:
             }
         rebuilt[name] = resource
     template["Resources"] = resources = rebuilt
-
-behavior = resources["Distribution"]["Properties"]["DistributionConfig"]["DefaultCacheBehavior"]
-if "FunctionAssociations" in behavior and behavior["FunctionAssociations"] != [
-    {"EventType": "viewer-request", "FunctionARN": {"Fn::GetAtt": ["SpaRouteFunction", "FunctionARN"]}}
-]:
-    sys.exit("The default behavior already has other CloudFront functions; merge them by hand.")
-behavior["FunctionAssociations"] = [
-    {"EventType": "viewer-request", "FunctionARN": {"Fn::GetAtt": ["SpaRouteFunction", "FunctionARN"]}}
-]
+    behavior["FunctionAssociations"] = [ASSOCIATION]
 
 statements = resources["GitHubDeployRole"]["Properties"]["Policies"][0]["PolicyDocument"]["Statement"]
 if READ_AUTH_OUTPUTS not in statements:

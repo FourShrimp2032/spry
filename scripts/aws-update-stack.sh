@@ -7,7 +7,7 @@ export AWS_REGION=eu-north-1 AWS_PAGER=''
 cd "$(dirname "$0")/.."
 STACK=spry-lab
 # The Cognito update touches only these; anything else (database, ECS service) needs a review first.
-EXPECTED='Distribution GitHubDeployRole SpaRouteFunction'
+EXPECTED='AuthRoutes Distribution GitHubDeployRole'
 CHANGE_SET="update-$(date +%Y%m%d%H%M%S)"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
@@ -26,8 +26,13 @@ done
 aws cloudformation create-change-set --stack-name "$STACK" --change-set-name "$CHANGE_SET" \
   --template-body "file://$WORK/body.json" --capabilities CAPABILITY_IAM --parameters "${PARAMS[@]}" > /dev/null
 if ! aws cloudformation wait change-set-create-complete --stack-name "$STACK" --change-set-name "$CHANGE_SET"; then
-  aws cloudformation describe-change-set --stack-name "$STACK" --change-set-name "$CHANGE_SET" --query StatusReason --output text
+  REASON=$(aws cloudformation describe-change-set --stack-name "$STACK" --change-set-name "$CHANGE_SET" --query StatusReason --output text)
   aws cloudformation delete-change-set --stack-name "$STACK" --change-set-name "$CHANGE_SET"
+  if [[ "$REASON" == *"didn't contain changes"* || "$REASON" == *"No updates"* ]]; then
+    echo "$STACK already has the sign-in changes; nothing to do."
+    exit 0
+  fi
+  echo "$REASON"
   exit 1
 fi
 aws cloudformation describe-change-set --stack-name "$STACK" --change-set-name "$CHANGE_SET" \
