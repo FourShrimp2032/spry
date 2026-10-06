@@ -31,6 +31,7 @@ deploy-backend:
 	fi; bash scripts/deploy-backend.sh
 deploy-auth:
 	@SITE_URL=$$($(call stack_output,$(MAIN_STACK),$(MAIN_REGION),FrontendUrl)) \
+	  CLOUDFRONT_DOMAIN=$$($(call stack_output,$(MAIN_STACK),$(MAIN_REGION),CloudFrontDnsName)) \
 	  AUTH_STACK=$(AUTH_STACK) AUTH_REGION=$(AUTH_REGION) bash scripts/deploy-auth.sh
 # Lines for .env, so that docker compose runs local sign-in against the same user pool.
 auth-env:

@@ -14,7 +14,7 @@
 | Build-змінні | `Makefile` | `VITE_COGNITO_AUTHORITY`, `VITE_COGNITO_CLIENT_ID`, `VITE_COGNITO_DOMAIN` читаються з outputs auth stack, не копіюються вручну |
 | Stretch: захист API | `backend/app/auth.py` | Перевіряє access token: підпис за JWKS (ключі кешуються), `exp`, `iss`, `client_id`, `token_use=access`. Без токена — 401. `/health` лишається публічним для ALB |
 
-Callback: `https://<сайт>/auth/callback/`, logout: `https://<сайт>/`, плюс те саме для `http://localhost:5173`. Слеш у кінці обов'язковий — Cognito порівнює URL точно.
+Callback: `https://<сайт>/auth/callback/`, logout: `https://<сайт>/` — для власного домену `app.antonyivaso.dynv6.net` (output `FrontendUrl` stack `spry-lab`), для адреси CloudFront `d310vkwtz8a1f0.cloudfront.net` і для `http://localhost:5173`. Слеш у кінці обов'язковий — Cognito порівнює URL точно.
 
 ## Кроки (виконує власник акаунтів)
 
@@ -54,7 +54,7 @@ GitHub → Settings → Secrets and variables → Actions → Variables: дод�
 
 ### 6. Перевірка «як незнайомець»
 Email і пароль, у приватному вікні:
-1. `https://d310vkwtz8a1f0.cloudfront.net/login/` → сторінка Cognito з формою і **Continue with Google**.
+1. `https://app.antonyivaso.dynv6.net/login/` → сторінка Cognito з формою і **Continue with Google**.
 2. Sign up з email, який ви читаєте → код підтвердження → повернення на сайт, email у header.
 3. Sign out → знову `/login/` → sign in.
 
@@ -67,8 +67,8 @@ Google, у новому приватному вікні: `/login/` → Continue 
 ### 7. (Stretch) захистити API
 Додайте repository variable `PROTECT_API = 1` і перезапустіть workflow. Backend отримає `COGNITO_*` із outputs auth stack. Перевірка:
 ```bash
-curl -i https://d310vkwtz8a1f0.cloudfront.net/api/meetings   # 401
-curl -i https://d310vkwtz8a1f0.cloudfront.net/health         # 200
+curl -i https://api.antonyivaso.dynv6.net/api/meetings   # 401
+curl -i https://api.antonyivaso.dynv6.net/health         # 200
 ```
 Після цього неавторизований відвідувач бачить «Sign in to see and create meetings». Вимкнути: видаліть змінну й перезапустіть workflow.
 
@@ -76,7 +76,7 @@ curl -i https://d310vkwtz8a1f0.cloudfront.net/health         # 200
 `make auth-env` друкує три рядки `VITE_COGNITO_*`; додайте їх у `.env` і запустіть `docker compose up --build`. `http://localhost:5173` уже є серед callback/logout URL. Для локального захисту API задайте ще `COGNITO_REGION`, `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID`.
 
 ## Що здати
-1. URL: `https://d310vkwtz8a1f0.cloudfront.net/login/`
+1. URL: `https://app.antonyivaso.dynv6.net/login/`
 2. Скриншоти: `docs/signin-password.png`, `docs/signin-google.png`
 3. Посилання на коміт з `infra/auth.yml` і зміною frontend.
 

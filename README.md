@@ -7,7 +7,7 @@
 - Frontend: https://d310vkwtz8a1f0.cloudfront.net
 - Backend: https://d310vkwtz8a1f0.cloudfront.net/api/meetings
 - Health: https://d310vkwtz8a1f0.cloudfront.net/health
-- Вхід (Lab 3, Cognito): https://d310vkwtz8a1f0.cloudfront.net/login/
+- Вхід (Lab 3, Cognito): https://app.antonyivaso.dynv6.net/login/
 - [Успішний AWS deploy](https://github.com/FourShrimp2032/spry/actions/runs/36727682803/attempts/2)
 
 ![Spry running on AWS](docs/meetings-screenshot.jpg)

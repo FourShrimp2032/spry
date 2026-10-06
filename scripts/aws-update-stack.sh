@@ -52,4 +52,4 @@ if [[ "$answer" != y ]]; then
 fi
 aws cloudformation execute-change-set --stack-name "$STACK" --change-set-name "$CHANGE_SET"
 aws cloudformation wait stack-update-complete --stack-name "$STACK"
-echo "$STACK updated. CloudFront takes a few minutes to deploy the new route function."
+echo "$STACK updated."

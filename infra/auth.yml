@@ -16,6 +16,11 @@ Parameters:
     Type: String
     Description: The deployed site's origin without a trailing slash, e.g. https://d123.cloudfront.net
     AllowedPattern: "^https://[^/]+$"
+  AlternateSiteUrl:
+    Type: String
+    Default: ""
+    Description: Another address of the same site, e.g. the CloudFront domain next to a custom domain.
+    AllowedPattern: "^(https://[^/]+)?$"
   LocalUrl:
     Type: String
     Default: http://localhost:5173
@@ -27,6 +32,9 @@ Parameters:
     Type: String
     NoEcho: true
     MinLength: 1
+
+Conditions:
+  HasAlternateSite: !Not [!Equals [!Ref AlternateSiteUrl, ""]]
 
 Resources:
   UserPool:
@@ -95,9 +103,11 @@ Resources:
       # Exact matches, trailing slash included: the app builds these from window.location.origin.
       CallbackURLs:
         - !Sub ${SiteUrl}/auth/callback/
+        - !If [HasAlternateSite, !Sub "${AlternateSiteUrl}/auth/callback/", !Ref AWS::NoValue]
         - !Sub ${LocalUrl}/auth/callback/
       LogoutURLs:
         - !Sub ${SiteUrl}/
+        - !If [HasAlternateSite, !Sub "${AlternateSiteUrl}/", !Ref AWS::NoValue]
         - !Sub ${LocalUrl}/
 
   UserPoolDomain:
