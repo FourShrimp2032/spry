@@ -11,7 +11,8 @@ if aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids "imag
   echo "Reusing immutable image $SHA"
 else
   aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
-  docker buildx build --platform linux/amd64 --push -t "$IMAGE" backend
+  # A plain single-manifest image: Lambda (report-builder) rejects the attestation index buildx adds.
+  docker buildx build --platform linux/amd64 --provenance=false --sbom=false --push -t "$IMAGE" backend
 fi
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT

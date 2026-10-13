@@ -59,6 +59,12 @@ for subnet in ${SUBNETS//,/ }; do
 done
 ROUTE_TABLES=$(printf '%s\n' "${ROUTE_TABLES[@]}" | sort -u | paste -sd, -)
 
+STATE=$(aws cloudformation describe-stacks --stack-name "$REPORTS_STACK" --query 'Stacks[0].StackStatus' --output text 2> /dev/null || true)
+if [[ "$STATE" == ROLLBACK_COMPLETE ]]; then
+  # A stack whose first create failed holds no resources and can only be deleted.
+  aws cloudformation delete-stack --stack-name "$REPORTS_STACK"
+  aws cloudformation wait stack-delete-complete --stack-name "$REPORTS_STACK"
+fi
 echo "Builder image: $IMAGE"
 echo "Subnets: $SUBNETS  route tables: $ROUTE_TABLES  security group: $SECURITY_GROUP"
 aws cloudformation deploy --stack-name "$REPORTS_STACK" --template-file infra/reports.yml \
