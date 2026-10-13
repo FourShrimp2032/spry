@@ -404,6 +404,11 @@ Resources:
       EmailIdentity: !Ref MailDomain
       DkimSigningAttributes:
         NextSigningKeyLength: RSA_2048_BIT
+      # SPF for our own domain instead of amazonses.com, so DMARC passes on SPF as well as DKIM.
+      # Until its MX and TXT records exist, SES falls back to amazonses.com.
+      MailFromAttributes:
+        MailFromDomain: !Sub mail.${MailDomain}
+        BehaviorOnMxFailure: USE_DEFAULT_VALUE
 
   # The SES sandbox delivers only to verified addresses; AWS emails a link to confirm this one.
   RecipientIdentity:
@@ -433,5 +438,11 @@ Outputs:
     Value: !Sub "${MailDomainIdentity.DkimDNSTokenName1} CNAME ${MailDomainIdentity.DkimDNSTokenValue1}"
   DkimRecord2:
     Value: !Sub "${MailDomainIdentity.DkimDNSTokenName2} CNAME ${MailDomainIdentity.DkimDNSTokenValue2}"
+  MailFromRecords:
+    Description: MX and SPF for the MAIL FROM domain, and a DMARC policy
+    Value: !Sub >-
+      mail.${MailDomain} MX 10 feedback-smtp.${AWS::Region}.amazonses.com |
+      mail.${MailDomain} TXT "v=spf1 include:amazonses.com ~all" |
+      _dmarc.${MailDomain} TXT "v=DMARC1; p=none;"
   DkimRecord3:
     Value: !Sub "${MailDomainIdentity.DkimDNSTokenName3} CNAME ${MailDomainIdentity.DkimDNSTokenValue3}"
