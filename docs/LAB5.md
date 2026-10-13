@@ -95,5 +95,28 @@ make report-now WEEK=2026-W30
 4. Три рядки CloudWatch з `make report-logs`: `"trigger": "schedule"` і `"trigger": "sqs"` від builder, `"trigger": "s3"` від mailer.
 5. Відповіді — [LAB5-ANSWERS.md](LAB5-ANSWERS.md).
 
+## Результати (13.10.2026, eu-north-1)
+
+`make reports-ls`:
+```
+2026-10-13 16:34:48        287 reports/2026-W30.csv   # на вимогу: повідомлення з DLQ після redrive
+2026-10-13 17:58:41        393 reports/2026-W40.csv   # на вимогу: make report-now WEEK=2026-W40
+2026-10-13 16:15:19        352 reports/2026-W41.csv   # розклад (rate(5 minutes), один запуск)
+```
+
+Рядки CloudWatch, по одному на trigger (час UTC):
+```
+13:15:17 /aws/lambda/spry-report-builder {"message": "report-builder triggered", "trigger": "schedule", "via": "sqs", "source": "schedule", "week": "2026-W41"}
+13:05:22 /aws/lambda/spry-report-builder {"message": "report-builder triggered", "trigger": "sqs", "via": "sqs", "source": "manual", "week": "2026-W41"}
+14:42:23 /aws/lambda/spry-report-mailer  {"message": "report-mailer triggered", "trigger": "s3", "event": "ObjectCreated:Put", "bucket": "spry-reports-751501312355", "key": "reports/2026-W40.csv", "sequencer": "006ACE434DF6F1E1EE"}
+```
+
+- DLQ: `REPORT_FAIL_WEEK=2026-W30` → три спроби (13:15, 13:21, 13:27) → повідомлення в `spry-report-requests-dlq` (13:33). Після deploy без FAIL_WEEK redrive (`aws sqs start-message-move-task`, те саме, що Start DLQ redrive) — `report saved … 2026-W30`.
+- Той самий тиждень двічі (W40): один файл, два листи — два `report emailed` з різними SES message id.
+
+Що зустрілося по дорозі:
+- Lambda відхилила образ із CI: `docker buildx` додавав provenance attestation (index замість одного manifest). Тепер `--provenance=false --sbom=false` у `scripts/deploy-backend.sh`.
+- dynv6 дописує зону до цілі CNAME без крапки в кінці: ціль потрібно вводити як `….dkim.amazonses.com.`.
+
 ## Видалення
 `aws cloudformation delete-stack --region eu-north-1 --stack-name spry-reports` — спершу спорожніть bucket (`aws s3 rm s3://spry-reports-<account> --recursive`). DNS-записи DKIM видаліть у dynv6.
