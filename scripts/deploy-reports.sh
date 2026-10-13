@@ -47,16 +47,21 @@ if ! git merge-base --is-ancestor "$REPORT_COMMIT" "$TAG" 2> /dev/null; then
 fi
 
 VPC=$(aws ec2 describe-security-groups --group-ids "$SECURITY_GROUP" --query 'SecurityGroups[0].VpcId' --output text)
-# Private subnets: the ones that do not hand out public IPs (the database lives there).
-SUBNETS=$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC" "Name=map-public-ip-on-launch,Values=false" --query 'Subnets[].SubnetId' --output text | tr '\t' ',')
-[[ -n "$SUBNETS" ]] || { echo "No private subnets in $VPC"; exit 1; }
-# Their route tables: an explicit association, otherwise the VPC's main table.
+# Private subnets: those whose route table (explicit, otherwise the VPC's main one) has no route
+# to an internet gateway. The database lives there; so will the builder.
+MAIN_TABLE=$(aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$VPC" "Name=association.main,Values=true" --query 'RouteTables[0].RouteTableId' --output text)
+SUBNETS=()
 ROUTE_TABLES=()
-for subnet in ${SUBNETS//,/ }; do
+for subnet in $(aws ec2 describe-subnets --filters "Name=vpc-id,Values=$VPC" --query 'Subnets[].SubnetId' --output text); do
   table=$(aws ec2 describe-route-tables --filters "Name=association.subnet-id,Values=$subnet" --query 'RouteTables[0].RouteTableId' --output text)
-  [[ "$table" == None ]] && table=$(aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$VPC" "Name=association.main,Values=true" --query 'RouteTables[0].RouteTableId' --output text)
+  [[ "$table" == None ]] && table=$MAIN_TABLE
+  gateways=$(aws ec2 describe-route-tables --route-table-ids "$table" --query 'RouteTables[0].Routes[].GatewayId' --output text)
+  [[ "$gateways" == *igw-* ]] && continue
+  SUBNETS+=("$subnet")
   ROUTE_TABLES+=("$table")
 done
+[[ ${#SUBNETS[@]} -gt 0 ]] || { echo "No private subnets in $VPC"; exit 1; }
+SUBNETS=$(IFS=,; echo "${SUBNETS[*]}")
 ROUTE_TABLES=$(printf '%s\n' "${ROUTE_TABLES[@]}" | sort -u | paste -sd, -)
 
 STATE=$(aws cloudformation describe-stacks --stack-name "$REPORTS_STACK" --query 'Stacks[0].StackStatus' --output text 2> /dev/null || true)
