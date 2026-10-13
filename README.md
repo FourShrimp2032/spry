@@ -39,6 +39,8 @@ docker compose up --build
 - [docs/SUBMISSION.md](docs/SUBMISSION.md) — стан і список матеріалів для здачі.
 - [docs/LAB3.md](docs/LAB3.md) — вхід через Cognito (email/пароль і Google): що додано, кроки deploy, що здавати.
 - [docs/LAB3-ANSWERS.md](docs/LAB3-ANSWERS.md) — відповіді на питання Lab 3 (міграція, вартість, автентифікація).
+- [docs/LAB5.md](docs/LAB5.md) — щотижневий звіт: EventBridge Scheduler → SQS → Lambda → S3 → Lambda → SES.
+- [docs/LAB5-ANSWERS.md](docs/LAB5-ANSWERS.md) — відповіді на питання про звіт і event-driven патерн.
 
 Стан, зданий у Lab 2, зафіксовано тегом [`lab2`](https://github.com/FourShrimp2032/spry/tree/lab2).
 
