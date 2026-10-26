@@ -1,5 +1,6 @@
 .PHONY: up check deploy-frontend deploy-backend deploy-auth auth-env update-stack \
-	deploy-reports check-week report-now report-local reports-ls report-logs
+	deploy-reports check-week report-now report-local reports-ls report-logs \
+	deploy-ai llm-hello parse parser-logs
 # Sign-in (Cognito) stack. CI passes AUTH_STACK from a repository variable; while that variable is
 # empty the site is built without sign-in, exactly as in Lab 2.
 AUTH_STACK ?= spry-auth
@@ -11,6 +12,9 @@ auth_output = $(call stack_output,$(AUTH_STACK),$(AUTH_REGION),$(1))
 # Weekly report stack, next to spry-lab.
 REPORTS_STACK ?= spry-reports
 reports_output = $(call stack_output,$(REPORTS_STACK),$(MAIN_REGION),$(1))
+# Paste an agenda: the parser Lambda next to spry-lab, Claude on Bedrock in us-east-1.
+AI_STACK ?= spry-ai
+PARSER_MODEL ?= anthropic.claude-opus-5-5
 up:
 	docker compose up --build
 check:
@@ -65,3 +69,19 @@ report-logs:
 	  aws logs filter-log-events --region $(MAIN_REGION) --log-group-name "$$($(call reports_output,$$output))" \
 	    --filter-pattern '"triggered"' --query 'events[].[timestamp,message]' --output text; \
 	done
+# Paste an agenda. PARSER_MODEL=anthropic.claude-haiku-5-5 to compare models.
+deploy-ai:
+	AI_STACK=$(AI_STACK) AUTH_STACK=$(AUTH_STACK) AUTH_REGION=$(AUTH_REGION) \
+	  PARSER_MODEL=$(PARSER_MODEL) bash scripts/deploy-ai.sh
+# From your laptop with your AWS login: pip install -r backend/requirements.txt first.
+llm-hello:
+	cd backend && PARSER_MODEL=$(PARSER_MODEL) python3 -m app.ai.hello
+# make parse TEXT="Пн 10:00, синк по прайсингу..." [TODAY=2026-10-26] [TZ=Europe/Kyiv]
+parse:
+	@test -n "$(TEXT)" || { echo 'Usage: make parse TEXT="..."'; exit 1; }
+	cd backend && PARSER_MODEL=$(PARSER_MODEL) TODAY=$(TODAY) TZ=$(or $(TZ),Europe/Kyiv) \
+	  python3 -m app.ai.agenda "$$TEXT"
+# One JSON line per parse: user, model, prompt version, tokens, latency, cost.
+parser-logs:
+	aws logs filter-log-events --region $(MAIN_REGION) --log-group-name /aws/lambda/spry-agenda-parser \
+	  --filter-pattern '{ $$.event = "agenda_*" }' --query 'events[].message' --output text

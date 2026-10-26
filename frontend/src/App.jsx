@@ -5,6 +5,7 @@ import {
   Check,
   Clock3,
   Leaf,
+  ListChecks,
   LogIn,
   LogOut,
   Plus,
@@ -12,6 +13,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import AgendaDialog from "./AgendaDialog";
 import { Button } from "./components/ui/button";
 import { Card } from "./components/ui/card";
 import { authEnabled, signOut, useOptionalAuth } from "./auth";
@@ -58,6 +60,7 @@ export default function App() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
+  const [agendaFor, setAgendaFor] = useState(null);
   const dialog = useRef(null);
   const createButton = useRef(null);
   const auth = useOptionalAuth();
@@ -139,6 +142,27 @@ export default function App() {
     } finally {
       setSaving(false);
     }
+  }
+  // Saving goes through the main API and its validation; the parser never writes.
+  async function saveAgenda(body) {
+    const response = await fetch(`${API}/api/meetings/${agendaFor.id}/agenda`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders },
+      body: JSON.stringify(body),
+    });
+    if (response.status === 401) throw new Error(signInMessage);
+    if (!response.ok)
+      throw new Error(
+        response.status === 422
+          ? "Check the agenda: every item needs a topic, minutes 1–480."
+          : "Could not save the agenda. Please try again.",
+      );
+    const saved = await response.json();
+    setMeetings((previous) =>
+      previous.map((m) => (m.id === saved.id ? saved : m)),
+    );
+    setNotice(`Agenda saved for “${saved.title}”.`);
+    return saved;
   }
   const now = new Date();
   const upcoming = meetings.filter((m) => new Date(m.starts_at) >= now).length;
@@ -316,6 +340,29 @@ export default function App() {
                       )}{" "}
                       minute meeting
                     </p>
+                    {meeting.agenda && (
+                      <ol className="mt-2 list-decimal space-y-0.5 pl-5 text-xs text-stone-600">
+                        {meeting.agenda.items.map((item, i) => (
+                          <li key={i}>
+                            {item.topic}
+                            {item.owner && ` — ${item.owner}`}
+                            {item.minutes && `, ${item.minutes} min`}
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => {
+                        setNotice("");
+                        setAgendaFor(meeting);
+                      }}
+                    >
+                      <ListChecks size={14} />
+                      {meeting.agenda ? "Edit agenda" : "Add agenda"}
+                    </Button>
                   </div>
                 </div>
                 <p className="text-sm text-stone-600">
@@ -355,6 +402,15 @@ export default function App() {
           <span>Meetings workspace</span>
         </footer>
       </div>
+      {agendaFor && (
+        <AgendaDialog
+          meeting={agendaFor}
+          authHeaders={authHeaders}
+          signedIn={!authEnabled || Boolean(token)}
+          onClose={() => setAgendaFor(null)}
+          onSaved={saveAgenda}
+        />
+      )}
       <dialog
         ref={dialog}
         onCancel={(event) => {

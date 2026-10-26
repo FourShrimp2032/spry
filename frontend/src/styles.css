@@ -17,7 +17,8 @@
 body {
   margin: 0;
 }
-input {
+input,
+textarea {
   width: 100%;
   margin-top: 8px;
   border: 1px solid #dce2db;
@@ -27,9 +28,13 @@ input {
   color: #27342e;
   font: inherit;
 }
-input:focus {
+input:focus,
+textarea:focus {
   outline: 2px solid #6c977e;
   outline-offset: 2px;
+}
+textarea {
+  resize: vertical;
 }
 label {
   font-size: 13px;

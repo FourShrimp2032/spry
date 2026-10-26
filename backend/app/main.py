@@ -1,6 +1,7 @@
 import os
+from uuid import UUID
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
@@ -10,7 +11,7 @@ from sqlalchemy.orm import Session
 from app import services
 from app.auth import require_user
 from app.database import get_session
-from app.schemas import MeetingCreate, MeetingRead
+from app.schemas import AgendaSave, MeetingCreate, MeetingRead
 
 app = FastAPI(title="Spry API", version="1.0.0")
 app.add_middleware(
@@ -45,3 +46,16 @@ def meetings(session: Session = Depends(get_session)):
 )
 def add_meeting(data: MeetingCreate, session: Session = Depends(get_session)):
     return services.create_meeting(session, data)
+
+
+# The only way an agenda is written: the parser suggests, this validated endpoint saves.
+@app.post(
+    "/api/meetings/{meeting_id}/agenda",
+    response_model=MeetingRead,
+    dependencies=[Depends(require_user)],
+)
+def save_agenda(meeting_id: UUID, data: AgendaSave, session: Session = Depends(get_session)):
+    meeting = services.save_agenda(session, meeting_id, data)
+    if meeting is None:
+        raise HTTPException(404, "Meeting not found")
+    return meeting

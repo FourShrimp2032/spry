@@ -1,0 +1,174 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Spry "Paste an agenda": the agenda-parser Lambda (backend image, outside the VPC, no database)
+  behind a public function URL that requires a Cognito access token. It calls Claude through the
+  Anthropic Messages API on Amazon Bedrock and returns JSON; saving goes through the main API.
+  Plus a monthly budget alarm. scripts/deploy-ai.sh fills the parameters.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: spry
+  BackendImage:
+    Type: String
+    Description: The backend image the ECS service runs (ECR URI with the commit SHA tag)
+  ParserModel:
+    Type: String
+    Default: anthropic.claude-opus-5-5
+    AllowedPattern: "^anthropic\\.claude-[a-z0-9-]+$"
+  BedrockRegion:
+    Type: String
+    Default: us-east-1
+  CognitoRegion:
+    Type: String
+    Default: us-east-1
+  CognitoUserPoolId:
+    Type: String
+  CognitoClientId:
+    Type: String
+  AllowedOrigins:
+    Type: CommaDelimitedList
+    Description: Origins of the site that may call the parser from the browser
+  BudgetEmail:
+    Type: String
+    AllowedPattern: "^[^@\\s]+@[^@\\s]+$"
+  BudgetAmount:
+    Type: Number
+    Default: 5
+
+Resources:
+  ParserLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ProjectName}-agenda-parser
+      RetentionInDays: 30
+      Tags:
+        - Key: PROJECT_NAME
+          Value: !Ref ProjectName
+
+  ParserRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: call-claude
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # No API key to store or leak: the role is allowed to call the model, as it would
+              # be allowed to write to S3. "*" for now; narrowing it is a discussion question.
+              - Effect: Allow
+                Action: bedrock-mantle:CreateInference
+                Resource: "*"
+      Tags:
+        - Key: PROJECT_NAME
+          Value: !Ref ProjectName
+
+  # The backend image with another entry point, as report-builder in Lab 5. No VpcConfig: the
+  # parser needs no database, reaches Bedrock and Cognito's keys over the internet, and costs
+  # nothing while nobody uses it.
+  ParserFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-agenda-parser
+      PackageType: Image
+      Code:
+        ImageUri: !Ref BackendImage
+      ImageConfig:
+        EntryPoint: [python, -m, awslambdaric]
+        Command: [app.ai.agenda_lambda.handler]
+        WorkingDirectory: /app
+      Architectures: [x86_64]
+      Role: !GetAtt ParserRole.Arn
+      Timeout: 30
+      MemorySize: 512
+      LoggingConfig:
+        LogGroup: !Ref ParserLogGroup
+      Environment:
+        Variables:
+          PARSER_MODEL: !Ref ParserModel
+          BEDROCK_REGION: !Ref BedrockRegion
+          COGNITO_REGION: !Ref CognitoRegion
+          COGNITO_USER_POOL_ID: !Ref CognitoUserPoolId
+          COGNITO_CLIENT_ID: !Ref CognitoClientId
+      Tags:
+        - Key: PROJECT_NAME
+          Value: !Ref ProjectName
+
+  # Public URL, private wallet: the handler rejects every request without a valid Cognito
+  # access token (401) and every text over 10,000 characters (413) before calling the model.
+  ParserUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt ParserFunction.Arn
+      AuthType: NONE
+      Cors:
+        AllowOrigins: !Ref AllowedOrigins
+        AllowMethods: [POST]
+        AllowHeaders: [authorization, content-type]
+        MaxAge: 3600
+
+  # A function URL with AuthType NONE needs both permissions to be reachable.
+  ParserUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ParserFunction
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+
+  ParserInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ParserFunction
+      Action: lambda:InvokeFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
+
+  # The cheapest insurance in the course: an email when the month's actual or forecast spend on
+  # this account passes the limit.
+  MonthlyBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: !Sub ${ProjectName}-monthly
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: !Ref BudgetAmount
+          Unit: USD
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref BudgetEmail
+        - Notification:
+            NotificationType: FORECASTED
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref BudgetEmail
+
+Outputs:
+  ParserUrl:
+    Value: !GetAtt ParserUrl.FunctionUrl
+  ParserFunction:
+    Value: !Ref ParserFunction
+  ParserLogGroup:
+    Value: !Ref ParserLogGroup
+  ParserModel:
+    Value: !Ref ParserModel

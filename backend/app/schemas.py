@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.ai.schemas import ActionItem, AgendaItem, ParsedAgenda
+
 
 class MeetingCreate(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -31,6 +33,25 @@ class MeetingCreate(BaseModel):
         return self
 
 
+class Agenda(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    items: list[AgendaItem] = Field(min_length=1, max_length=50)
+    action_items: list[ActionItem] = Field(default=[], max_length=50)
+
+
+class AiSuggestion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    agenda: ParsedAgenda
+    model: str = Field(min_length=1, max_length=100)
+    prompt_version: str = Field(min_length=1, max_length=50)
+
+
+class AgendaSave(Agenda):
+    # What the parser suggested, if the user started from a paste. The difference between this
+    # and the saved agenda is the quality signal.
+    ai_suggestion: AiSuggestion | None = None
+
+
 class MeetingRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
@@ -38,6 +59,7 @@ class MeetingRead(BaseModel):
     starts_at: AwareDatetime
     ends_at: AwareDatetime
     attendee_count: int
+    agenda: Agenda | None = None
 
     @field_validator("starts_at", "ends_at")
     @classmethod

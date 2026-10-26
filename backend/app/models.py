@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import CheckConstraint, DateTime, Integer, String, Uuid
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -18,3 +19,5 @@ class Meeting(Base):
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     attendee_count: Mapped[int] = mapped_column(Integer)
+    agenda: Mapped[dict | None] = mapped_column(JSONB)
+    ai_suggestion: Mapped[dict | None] = mapped_column(JSONB)
