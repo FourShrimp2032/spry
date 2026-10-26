@@ -3,7 +3,7 @@ Description: >-
   Spry "Paste an agenda": the agenda-parser Lambda (backend image, outside the VPC, no database)
   behind a public function URL that requires a Cognito access token. It calls Claude through the
   Anthropic Messages API on Amazon Bedrock and returns JSON; saving goes through the main API.
-  Plus a monthly budget alarm. scripts/deploy-ai.sh fills the parameters.
+  scripts/deploy-ai.sh fills the parameters; the budget alarm is infra/budget.yml.
 
 Parameters:
   ProjectName:
@@ -29,12 +29,6 @@ Parameters:
   AllowedOrigins:
     Type: CommaDelimitedList
     Description: Origins of the site that may call the parser from the browser
-  BudgetEmail:
-    Type: String
-    AllowedPattern: "^[^@\\s]+@[^@\\s]+$"
-  BudgetAmount:
-    Type: Number
-    Default: 5
 
 Resources:
   ParserLogGroup:
@@ -132,36 +126,6 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: "*"
       InvokedViaFunctionUrl: true
-
-  # The cheapest insurance in the course: an email when the month's actual or forecast spend on
-  # this account passes the limit.
-  MonthlyBudget:
-    Type: AWS::Budgets::Budget
-    Properties:
-      Budget:
-        BudgetName: !Sub ${ProjectName}-monthly
-        BudgetType: COST
-        TimeUnit: MONTHLY
-        BudgetLimit:
-          Amount: !Ref BudgetAmount
-          Unit: USD
-      NotificationsWithSubscribers:
-        - Notification:
-            NotificationType: ACTUAL
-            ComparisonOperator: GREATER_THAN
-            Threshold: 100
-            ThresholdType: PERCENTAGE
-          Subscribers:
-            - SubscriptionType: EMAIL
-              Address: !Ref BudgetEmail
-        - Notification:
-            NotificationType: FORECASTED
-            ComparisonOperator: GREATER_THAN
-            Threshold: 100
-            ThresholdType: PERCENTAGE
-          Subscribers:
-            - SubscriptionType: EMAIL
-              Address: !Ref BudgetEmail
 
 Outputs:
   ParserUrl:

@@ -39,8 +39,11 @@ aws cloudformation deploy --stack-name "$AI_STACK" --template-file infra/ai.yml 
   --capabilities CAPABILITY_IAM --no-fail-on-empty-changeset --tags PROJECT_NAME=spry \
   --parameter-overrides "BackendImage=$IMAGE" "ParserModel=${PARSER_MODEL:-anthropic.claude-opus-5-5}" \
   "CognitoRegion=$AUTH_REGION" "CognitoUserPoolId=$(output "$AUTH_STACK" "$AUTH_REGION" UserPoolId)" \
-  "CognitoClientId=$(output "$AUTH_STACK" "$AUTH_REGION" ClientId)" "AllowedOrigins=$ORIGINS" \
-  "BudgetEmail=$BUDGET_EMAIL"
+  "CognitoClientId=$(output "$AUTH_STACK" "$AUTH_REGION" ClientId)" "AllowedOrigins=$ORIGINS"
+# CloudFormation supports budgets only in us-east-1.
+aws cloudformation deploy --region us-east-1 --stack-name "$AI_STACK-budget" \
+  --template-file infra/budget.yml --no-fail-on-empty-changeset --tags PROJECT_NAME=spry \
+  --parameter-overrides "BudgetEmail=$BUDGET_EMAIL" "BudgetAmount=${BUDGET_AMOUNT:-5}"
 URL=$(output "$AI_STACK" "$AWS_REGION" ParserUrl)
 printf '# Written by scripts/deploy-ai.sh: the agenda parser (a public, token-protected URL).\nVITE_PARSER_URL=%s\n' "${URL%/}" > frontend/.env.production
 aws cloudformation describe-stacks --stack-name "$AI_STACK" --query 'Stacks[0].Outputs[].[OutputKey,OutputValue]' --output table

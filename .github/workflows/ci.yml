@@ -54,7 +54,7 @@ jobs:
         with:
           python-version: '3.12.10'
       - run: pip install cfn-lint==1.57.1
-      - run: cfn-lint infra/aws-stack.json infra/auth.yml infra/reports.yml infra/ai.yml
+      - run: cfn-lint infra/aws-stack.json infra/auth.yml infra/reports.yml infra/ai.yml infra/budget.yml
       - run: bash -n scripts/*.sh
   deploy:
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.AWS_ROLE_ARN != ''
