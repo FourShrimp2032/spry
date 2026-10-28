@@ -59,5 +59,8 @@
 Розгорнутий parser пише один рядок на розбір у `/aws/lambda/spry-agenda-parser` (`make parser-logs`):
 
 ```
-LOG_LINE_PLACEHOLDER
+2026-10-28 21:57:05 UTC  /aws/lambda/spry-agenda-parser
+{"event": "agenda_parsed", "user": "6418a468-0011-70ec-6dca-b000bb9b19dd", "model": "us.amazon.nova-pro-v1:0", "prompt_version": "agenda-v2", "input_tokens": 1350, "output_tokens": 196, "latency_ms": 3246, "cost_usd": 0.001707, "chars": 183, "items": 3}
 ```
+
+Це розбір із запису екрана: український приклад, розгорнута функція (Nova Pro, prompt agenda-v2), 1 350 вхідних і 196 вихідних токенів, 3.2 с, $0.0017. Користувач — Cognito `sub`; сам текст не логується. Після Save користувач змінив третій пункт (owner → Taras, 15 хв); запропоноване моделлю лишилось у `ai_suggestion`.
