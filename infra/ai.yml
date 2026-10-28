@@ -1,8 +1,9 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >-
   Spry "Paste an agenda": the agenda-parser Lambda (backend image, outside the VPC, no database)
-  behind a public function URL that requires a Cognito access token. It calls Claude through the
-  Anthropic Messages API on Amazon Bedrock and returns JSON; saving goes through the main API.
+  behind a public function URL that requires a Cognito access token. It calls Claude (Anthropic
+  Messages API) or Amazon Nova (Converse API) on Bedrock and returns JSON; saving goes through the
+  main API.
   scripts/deploy-ai.sh fills the parameters; the budget alarm is infra/budget.yml.
 
 Parameters:
@@ -15,7 +16,7 @@ Parameters:
   ParserModel:
     Type: String
     Default: anthropic.claude-opus-5-5
-    AllowedPattern: "^anthropic\\.claude-[a-z0-9-]+$"
+    Description: anthropic.* uses the Messages API; others (us.amazon.nova-pro-v1:0) Converse
   BedrockRegion:
     Type: String
     Default: us-east-1
@@ -61,6 +62,10 @@ Resources:
               # be allowed to write to S3. "*" for now; narrowing it is a discussion question.
               - Effect: Allow
                 Action: bedrock-mantle:CreateInference
+                Resource: "*"
+              # Converse (Amazon Nova through a US cross-region inference profile).
+              - Effect: Allow
+                Action: bedrock:InvokeModel
                 Resource: "*"
       Tags:
         - Key: PROJECT_NAME

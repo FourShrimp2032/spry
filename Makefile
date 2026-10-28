@@ -14,7 +14,9 @@ REPORTS_STACK ?= spry-reports
 reports_output = $(call stack_output,$(REPORTS_STACK),$(MAIN_REGION),$(1))
 # Paste an agenda: the parser Lambda next to spry-lab, Claude on Bedrock in us-east-1.
 AI_STACK ?= spry-ai
-PARSER_MODEL ?= anthropic.claude-opus-5-5
+# Claude Opus 5.5 is the target; this account's Claude quota is 0 until AWS Support lifts it,
+# so the deployed parser runs Amazon Nova Pro. Switch back with PARSER_MODEL=anthropic.claude-opus-5-5.
+PARSER_MODEL ?= us.amazon.nova-pro-v1:0
 up:
 	docker compose up --build
 check:
@@ -69,7 +71,7 @@ report-logs:
 	  aws logs filter-log-events --region $(MAIN_REGION) --log-group-name "$$($(call reports_output,$$output))" \
 	    --filter-pattern '"triggered"' --query 'events[].[timestamp,message]' --output text; \
 	done
-# Paste an agenda. PARSER_MODEL=anthropic.claude-haiku-5-5 to compare models.
+# Paste an agenda. PARSER_MODEL=us.amazon.nova-lite-v1:0 to compare models.
 deploy-ai:
 	AI_STACK=$(AI_STACK) AUTH_STACK=$(AUTH_STACK) AUTH_REGION=$(AUTH_REGION) \
 	  PARSER_MODEL=$(PARSER_MODEL) bash scripts/deploy-ai.sh

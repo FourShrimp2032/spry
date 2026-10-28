@@ -11,13 +11,13 @@ import time
 from datetime import date
 from zoneinfo import ZoneInfoNotFoundError
 
-import anthropic
-
 from app.ai.agenda import (
     MAX_TEXT_CHARS,
     PARSER_MODEL,
     PROMPT_VERSION,
     AgendaParseError,
+    ParserBusy,
+    ParserUnavailable,
     cost_usd,
     not_in_text,
     parse_agenda,
@@ -75,12 +75,11 @@ def handler(event, context):
             latency_ms=int((time.monotonic() - started) * 1000),
             cost_usd=cost_usd(PARSER_MODEL, error.usage))  # fmt: skip
         return reply(422, {"error": "No agenda found in this text"})
-    except anthropic.RateLimitError:
+    except ParserBusy:
         log(event="agenda_throttled", **common)
         return reply(429, {"error": "The parser is busy, try again in a minute"})
-    except (anthropic.APIConnectionError, anthropic.APIStatusError) as error:
-        status = getattr(error, "status_code", None)
-        log(event="agenda_unavailable", **common, error=type(error).__name__, status=status)
+    except ParserUnavailable as error:
+        log(event="agenda_unavailable", **common, error=str(error))
         return reply(503, {"error": "The parser is unavailable, type the agenda by hand"})
 
     log(
