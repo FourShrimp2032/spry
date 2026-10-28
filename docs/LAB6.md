@@ -19,7 +19,7 @@ Diagram (C4, level 2): [architecture.md](architecture.md). Decision: [adr/0006-l
 | Part | File | What it does |
 |---|---|---|
 | Contract | `backend/app/ai/schemas.py` | `AgendaItem`, `ActionItem`, `ParsedAgenda` (pydantic). `starts_at` must carry a UTC offset |
-| Parser | `backend/app/ai/agenda.py` | `parse_agenda(text, today, tz)`: one `record_agenda` tool, effort `low`, today's date and zone in the prompt, pasted text inside `<pasted_text>` and declared as data; validation error shown to the model once, then `AgendaParseError`; an empty agenda is an error too. `not_in_text()` flags owners that do not occur in the text. `PROMPT_VERSION = "agenda-v1"`, model from `PARSER_MODEL` |
+| Parser | `backend/app/ai/agenda.py` | `parse_agenda(text, today, tz)` with two backends, `MessagesApi` (Claude, bedrock-mantle) and `ConverseApi` (Nova and other Bedrock models), chosen by `PARSER_MODEL`: one `record_agenda` tool, today's date, zone and a two-week calendar in the prompt, the user's real UTC offset applied in code, pasted text inside `<pasted_text>` and declared as data; validation error shown to the model once, then `AgendaParseError`; an empty agenda is an error too. `not_in_text()` flags owners that do not occur in the text. `PROMPT_VERSION = "agenda-v2"`, model from `PARSER_MODEL` |
 | Lambda | `backend/app/ai/agenda_lambda.py` | Cognito access token (401), text ≤ 10,000 chars (413), 422 no agenda, 429 throttled, 503 Bedrock unavailable. One JSON log line per parse |
 | Token check | `backend/app/auth.py` | `verify_access_token()` shared by the API and the parser |
 | Save | `backend/app/main.py`, migration `0002_agenda.py` | `POST /api/meetings/{id}/agenda` validates and stores `agenda` and `ai_suggestion` (JSONB): what the model suggested, model, prompt version |
@@ -36,14 +36,14 @@ Diagram (C4, level 2): [architecture.md](architecture.md). Decision: [adr/0006-l
 pip install -r backend/requirements.txt "botocore[crt]"
 make llm-hello
 make parse TEXT="Пн 10:00, синк по прайсингу, 45 хв. 1) нові тарифи Pro — Олена, 15 хв"
-make parse TEXT="..." PARSER_MODEL=anthropic.claude-haiku-5-5
+make parse TEXT="..." PARSER_MODEL=us.amazon.nova-lite-v1:0
 
 # deploy (after CI has deployed an image that contains the parser)
 make deploy-ai          # writes frontend/.env.production with the parser URL; commit it
 make parser-logs
 ```
 
-Bedrock needs the Anthropic use-case form once per account (Bedrock → Model catalog → Claude, us-east-1). Until it is approved every call returns 403 `… is not available for this account`.
+Bedrock needs, per account: the Anthropic use-case form, a Marketplace agreement per model, a **Paid** AWS plan (Free-plan accounts cannot use Marketplace models) and a non-zero quota. This account had all but the last: its Claude quota is 0 tokens/min until AWS Support lifts it, so the deployed parser runs **Amazon Nova Pro** through the Converse API (`PARSER_MODEL=us.amazon.nova-pro-v1:0`, the Makefile default for now). When AWS lifts it: `make deploy-ai PARSER_MODEL=anthropic.claude-opus-5-5`.
 
 ## The screen recording (≤ 45 s)
 
@@ -56,7 +56,7 @@ Bedrock needs the Anthropic use-case form once per account (Bedrock → Model ca
 
 ## What to submit
 
-1. Commit link: https://github.com/FourShrimp2032/spry/commit/4fb0a05 (parser, `infra/ai.yml`, screen, ADR), deployed in `fe5001e`.
+1. Commit link: https://github.com/FourShrimp2032/spry/commit/4fb0a05 (parser, `infra/ai.yml`, screen, ADR); Nova backend and prompt v2 in `6fdc767`.
 2. The screen recording.
 3. The test table and 4. the CloudWatch log line and 5. the answers: [LAB6-ANSWERS.md](LAB6-ANSWERS.md).
 

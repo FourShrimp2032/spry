@@ -15,7 +15,8 @@ Agendas arrive as emails, chat messages and notes, not as forms. "Paste an agend
 
 ## Decision
 
-- **Model:** Claude Opus 5.5 (`anthropic.claude-opus-5-5`) through the Anthropic Messages API on Bedrock (`bedrock-mantle`, us-east-1), effort `low`. The model ID is configuration (`PARSER_MODEL`), so Haiku 5.5 is one deploy away when the test table shows it is good enough.
+- **Model:** Claude Opus 5.5 (`anthropic.claude-opus-5-5`) through the Anthropic Messages API on Bedrock (`bedrock-mantle`, us-east-1), effort `low`. The model ID is configuration (`PARSER_MODEL`).
+- **Amendment, 2026-10-28:** this account's Claude quota is 0 tokens/min (new account, AWS Support case open), so the deployed parser runs **Amazon Nova Pro** (`us.amazon.nova-pro-v1:0`) through the provider-neutral **Converse API**. `parse_agenda()` has two backends behind one interface (`MessagesApi`, `ConverseApi`), chosen by the model ID; the tool, prompt, schema, validation and logging are shared. Switching back to Claude is `make deploy-ai PARSER_MODEL=anthropic.claude-opus-5-5`. Lesson: the thin layer between our code and one vendor's SDK paid for itself within a day.
 - **Contract is a schema.** The model answers by calling `record_agenda`, whose input schema is `ParsedAgenda` (pydantic). Output is validated; the validation error is shown to the model once; then a clear 422. Unknown values stay `null`; owners that do not occur in the text are flagged `not in text` in the UI.
 - **The parser runs outside the VPC** as its own Lambda (`spry-agenda-parser`, backend image, function URL). It needs no database: text in, JSON out. It reaches Bedrock and Cognito's JWKS over the internet with no NAT and no endpoint, and costs $0 while unused.
 - **The model never writes.** The browser shows a pre-filled form; the user edits and presses Save, which goes to the existing API (`POST /api/meetings/{id}/agenda`) with its validation. The API stores the final agenda and, next to it, the AI suggestion with model and prompt version (`ai_suggestion` JSONB).
@@ -31,7 +32,7 @@ Agendas arrive as emails, chat messages and notes, not as forms. "Paste an agend
 
 ## Consequences
 
-- **Cost:** about 1,500–2,500 input and 300–800 output tokens per parse on Opus 5.5, i.e. ≈ $0.01–0.03 per parse (measured values in `docs/LAB6-ANSWERS.md`). Idle cost $0; the budget alarm caps surprises.
+- **Cost:** measured on Nova Pro ≈ $0.0017 per parse (1,300 input, 20–730 output tokens); estimated on Opus 5.5 ≈ $0.014. Details in `docs/LAB6-ANSWERS.md`. Idle cost $0; the budget alarm caps surprises.
 - **Logged:** one JSON line per parse in `/aws/lambda/spry-agenda-parser`: user (Cognito `sub`), model, prompt version, input/output tokens, latency, cost, text length, item count. Not the pasted text itself (it may contain personal data).
 - **Quality signal:** the diff between `ai_suggestion` and the saved agenda, per prompt version.
 - **When Bedrock is down or throttling:** the parser answers 503/429 with a clear message; the user types the agenda by hand in the same form. Meetings, sign-in, agendas and the weekly report keep working, because nothing else depends on the parser.
