@@ -1,0 +1,10 @@
+# What `terraform plan` from a laptop uploads to HCP Terraform: the repository, minus these.
+.git/
+.env
+.env.*
+!frontend/.env.production
+**/node_modules/
+**/.venv/
+**/.terraform/
+frontend/dist/
+work/
