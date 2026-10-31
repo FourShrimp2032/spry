@@ -45,5 +45,6 @@ provider "aws" {
 locals {
   tags = {
     PROJECT_NAME = var.project_name
+    ManagedBy    = "terraform"
   }
 }

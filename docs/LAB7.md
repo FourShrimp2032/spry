@@ -71,6 +71,6 @@ The Lab 5 exercises are now variables: `schedule_expression = "rate(5 minutes)"`
 
 ## What to submit
 
-1. Commit link: (see below)
+1. Commit link: https://github.com/FourShrimp2032/spry/commit/8428ad1 (the migration; `3730b7c` retained the stacks first)
 2. Screenshot: an HCP Terraform run of `spry-dev` triggered by a push or merge, ending in **Apply finished**.
 3. `terraform plan` after the migration ending in **No changes. Your infrastructure matches the configuration.**
