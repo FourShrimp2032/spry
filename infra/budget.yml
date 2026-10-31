@@ -19,6 +19,8 @@ Resources:
   # this account passes the limit.
   MonthlyBudget:
     Type: AWS::Budgets::Budget
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       Budget:
         BudgetName: !Sub ${ProjectName}-monthly

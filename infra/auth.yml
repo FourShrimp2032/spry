@@ -39,6 +39,8 @@ Conditions:
 Resources:
   UserPool:
     Type: AWS::Cognito::UserPool
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       UserPoolName: !Sub ${ProjectName}-users
       UserPoolTier: ESSENTIALS
@@ -69,6 +71,8 @@ Resources:
 
   GoogleIdentityProvider:
     Type: AWS::Cognito::UserPoolIdentityProvider
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       UserPoolId: !Ref UserPool
       ProviderName: Google
@@ -86,6 +90,8 @@ Resources:
   # Public client: a browser cannot keep a secret, so PKCE protects the code exchange instead.
   UserPoolClient:
     Type: AWS::Cognito::UserPoolClient
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     DependsOn: GoogleIdentityProvider
     Properties:
       ClientName: !Sub ${ProjectName}-web
@@ -112,6 +118,8 @@ Resources:
 
   UserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       UserPoolId: !Ref UserPool
       Domain: !Ref DomainPrefix
@@ -120,6 +128,8 @@ Resources:
   # A version 2 domain has no sign-in page until the client has a branding style.
   ManagedLoginBranding:
     Type: AWS::Cognito::ManagedLoginBranding
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     DependsOn: UserPoolDomain
     Properties:
       UserPoolId: !Ref UserPool

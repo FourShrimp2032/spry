@@ -34,6 +34,8 @@ Parameters:
 Resources:
   ParserLogGroup:
     Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       LogGroupName: !Sub /aws/lambda/${ProjectName}-agenda-parser
       RetentionInDays: 30
@@ -43,6 +45,8 @@ Resources:
 
   ParserRole:
     Type: AWS::IAM::Role
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -76,6 +80,8 @@ Resources:
   # nothing while nobody uses it.
   ParserFunction:
     Type: AWS::Lambda::Function
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       FunctionName: !Sub ${ProjectName}-agenda-parser
       PackageType: Image
@@ -106,6 +112,8 @@ Resources:
   # access token (401) and every text over 10,000 characters (413) before calling the model.
   ParserUrl:
     Type: AWS::Lambda::Url
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       TargetFunctionArn: !GetAtt ParserFunction.Arn
       AuthType: NONE
@@ -118,6 +126,8 @@ Resources:
   # A function URL with AuthType NONE needs both permissions to be reachable.
   ParserUrlPermission:
     Type: AWS::Lambda::Permission
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       FunctionName: !Ref ParserFunction
       Action: lambda:InvokeFunctionUrl
@@ -126,6 +136,8 @@ Resources:
 
   ParserInvokePermission:
     Type: AWS::Lambda::Permission
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       FunctionName: !Ref ParserFunction
       Action: lambda:InvokeFunction
