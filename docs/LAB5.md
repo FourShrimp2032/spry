@@ -1,5 +1,7 @@
 # Lab 5 — щотижневий звіт про зустрічі (event-driven)
 
+> **Since Lab 7** this infrastructure is Terraform in `infra/*.tf`, applied by HCP Terraform; the CloudFormation template and `make deploy-*` command below are history ([LAB7.md](LAB7.md)).
+
 Щопонеділка о 07:00 за Києвом система будує CSV-звіт за минулий ISO-тиждень, кладе його в S3 і надсилає через SES. Ніхто нічого не натискає.
 
 ```

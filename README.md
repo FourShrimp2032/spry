@@ -41,6 +41,8 @@ docker compose up --build
 - [docs/LAB3-ANSWERS.md](docs/LAB3-ANSWERS.md) — відповіді на питання Lab 3 (міграція, вартість, автентифікація).
 - [docs/LAB5.md](docs/LAB5.md) — щотижневий звіт: EventBridge Scheduler → SQS → Lambda → S3 → Lambda → SES.
 - [docs/LAB5-ANSWERS.md](docs/LAB5-ANSWERS.md) — відповіді на питання про звіт і event-driven патерн.
+- [docs/LAB6.md](docs/LAB6.md) — Paste an agenda: LLM на Amazon Bedrock розбирає вставлений текст у порядок денний.
+- [docs/LAB7.md](docs/LAB7.md) — інфраструктура Lab 4–6 перенесена з CloudFormation у Terraform (HCP Terraform), рішення — [ADR 0007](docs/adr/0007-terraform.md).
 
 Стан, зданий у Lab 2, зафіксовано тегом [`lab2`](https://github.com/FourShrimp2032/spry/tree/lab2).
 
@@ -59,7 +61,20 @@ make deploy-backend
 make deploy-frontend
 ```
 
-CI викликає ті самі команди після успішних перевірок на main. Без `AWS_ROLE_ARN` deploy job пропускається — це ще не успішне розгортання. Образи тегуються повним SHA коміту. Міграція — окреме ECS task перед оновленням сервісу.
+CI викликає ті самі команди після успішних перевірок на main.
+
+### Інфраструктура (Terraform)
+
+Вхід (Cognito), щотижневий звіт, parser і budget описані в `infra/*.tf`. State і запуски — у HCP Terraform (організація `ooad-fourshrimp2032`, workspace `spry-dev`): pull request отримує plan як check, merge у `main` — apply. AWS-ключів ніде немає: run бере тимчасові креденшали ролі `hcp-terraform-ooad-fourshrimp2032` через OIDC (`infra/bootstrap`). Базовий stack курсу `spry-lab` лишається CloudFormation, Terraform читає його outputs.
+
+```bash
+terraform login        # один раз: токен HCP Terraform
+make infra-plan        # speculative plan у HCP Terraform, apply неможливий
+make infra-output      # outputs: user pool, queue, bucket, parser URL...
+make frontend-env      # публічні значення для збірки сайту -> frontend/.env.production (закомітити)
+```
+
+Apply у Makefile немає: будь-яка зміна інфраструктури — це pull request. Секрет Google-клієнта — sensitive змінна workspace, не в Git. Без `AWS_ROLE_ARN` deploy job пропускається — це ще не успішне розгортання. Образи тегуються повним SHA коміту. Міграція — окреме ECS task перед оновленням сервісу.
 
 ## Межі цієї роботи
 

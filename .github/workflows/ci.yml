@@ -54,7 +54,13 @@ jobs:
         with:
           python-version: '3.12.10'
       - run: pip install cfn-lint==1.57.1
-      - run: cfn-lint infra/aws-stack.json infra/auth.yml infra/reports.yml infra/ai.yml infra/budget.yml
+      - run: cfn-lint infra/aws-stack.json
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.17.1
+      # Formatting and validation only: plan and apply run in HCP Terraform (workspace spry-dev).
+      - run: terraform fmt -check -recursive infra
+      - run: terraform -chdir=infra init -backend=false -input=false && terraform -chdir=infra validate
       - run: bash -n scripts/*.sh
   deploy:
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.AWS_ROLE_ARN != ''
@@ -78,8 +84,6 @@ jobs:
       FRONTEND_BUCKET: ${{ vars.FRONTEND_BUCKET }}
       CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
       VITE_API_URL: ${{ vars.VITE_API_URL }}
-      # Empty until the auth stack exists: the site then builds without sign-in, as in Lab 2.
-      AUTH_STACK: ${{ vars.AUTH_STACK }}
       # 1 = the API requires a Cognito access token (stretch goal).
       PROTECT_API: ${{ vars.PROTECT_API }}
     steps:

@@ -11,3 +11,11 @@ __pycache__/
 .ruff_cache/
 .DS_Store
 work/
+# Terraform: providers, local state and plans never go to Git (state lives in HCP Terraform).
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+infra/.build/

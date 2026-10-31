@@ -6,7 +6,7 @@ set -euo pipefail
 if [[ -n "${VITE_COGNITO_AUTHORITY:-}${VITE_COGNITO_CLIENT_ID:-}${VITE_COGNITO_DOMAIN:-}" ]]; then
   [[ "${VITE_COGNITO_AUTHORITY:-}" == https://* && "${VITE_COGNITO_DOMAIN:-}" == https://* ]] \
     && [[ "${VITE_COGNITO_CLIENT_ID:-None}" != None ]] \
-    || { echo 'Incomplete Cognito outputs: deploy the auth stack first (make deploy-auth)'; exit 1; }
+    || { echo 'Incomplete Cognito outputs: run make frontend-env and commit frontend/.env.production'; exit 1; }
 fi
 (cd frontend && npm ci && npm run build)
 # Publish new immutable assets first. Keep old hashed assets for already-open tabs.

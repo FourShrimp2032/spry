@@ -1,5 +1,7 @@
 # Lab 3 — вхід через Cognito
 
+> **Since Lab 7** this infrastructure is Terraform in `infra/*.tf`, applied by HCP Terraform; the CloudFormation template and `make deploy-*` command below are history ([LAB7.md](LAB7.md)).
+
 Стан Lab 2 зафіксовано тегом [`lab2`](https://github.com/FourShrimp2032/spry/tree/lab2). Lab 3 лише додає вхід: поки repository variable `AUTH_STACK` порожня, CI збирає сайт так само, як у Lab 2, а API лишається публічним, доки не ввімкнено `PROTECT_API=1`.
 
 ## Що додано

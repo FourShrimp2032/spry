@@ -1,5 +1,7 @@
 # Lab 6 — Paste an agenda (Claude on Amazon Bedrock)
 
+> **Since Lab 7** this infrastructure is Terraform in `infra/*.tf`, applied by HCP Terraform; the CloudFormation template and `make deploy-*` command below are history ([LAB7.md](LAB7.md)).
+
 The user pastes an email, a chat message or notes into a meeting. Claude turns it into a structured agenda, the app shows the pre-filled form, the user checks it and presses **Save**. The model suggests; the person decides.
 
 ```
